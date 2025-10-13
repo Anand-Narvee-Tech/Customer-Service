@@ -12,11 +12,17 @@ import com.example.entity.Vendor;
 @Repository
 public interface VendorRepository extends JpaRepository<Vendor, Long> {
 
-    @Query("SELECT v FROM Vendor v " +
-           "WHERE LOWER(v.vendorName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(v.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(STR(v.gstNumber)) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(STR(v.phoneNumber)) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "ORDER BY v.vendorId ASC")
-    Page<Vendor> searchVendors(@Param("keyword") String keyword, Pageable pageable);
+                @Query("SELECT v FROM Vendor v " +
+                                       "WHERE LOWER(v.vendorName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(v.vendorAccountNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(v.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(v.vendorAddress.street) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(v.vendorAddress.city) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(v.vendorAddress.state) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(v.vendorAddress.zipCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(CAST(v.gstNumber AS string)) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "   OR LOWER(CAST(v.phoneNumber AS string)) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                                       "ORDER BY v.vendorId ASC")
+                                Page<Vendor> searchVendors(@Param("keyword") String keyword, Pageable pageable);
+
 }

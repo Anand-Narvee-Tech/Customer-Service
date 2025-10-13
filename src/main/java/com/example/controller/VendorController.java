@@ -45,7 +45,7 @@ public class VendorController {
 	}
 	
 	
-    @GetMapping("getall")
+    @GetMapping("/ getall")
 	public ResponseEntity<RestAPIResponse> getAllVendors(){
 		try {
 			 return new ResponseEntity<>(new RestAPIResponse("success","All Vendors Data Successfully",vendorServiceImpl.getAll()),HttpStatus.OK);
