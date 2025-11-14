@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 public class VendorAddress {
 
 	private String street;
+    private String suite; // Added, since your JSON has "suite"
     private String city;
     private String state;
     private String zipCode;

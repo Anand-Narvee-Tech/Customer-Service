@@ -14,15 +14,14 @@ import lombok.NoArgsConstructor;
 @Data
 public class Vendor {
 
-    @Id
-    private Long vendorId;
+	@Id
+    private Long vendorId; // assuming auto-generated or manually set
 
     private String vendorName;
-    private String vendorAccountNumber;
+    private String vendorAccountNumber; // optional
     private String email;
     private String einNumber;
-    private Long phoneNumber;
-    
+    private String phoneNumber; // now String to allow formatted numbers    
     @Embedded
     private VendorAddress vendorAddress; }
 
