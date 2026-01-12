@@ -10,6 +10,8 @@ import com.example.entity.Vendor;
 public interface VendorService {
 
 	public Vendor createVendor(Vendor vendor);
+	public boolean checkFieldExists(String field, String value);
+	
 	public Vendor getById(Long vendorId);
 	
 	public List<Vendor> searchByName(String name);
@@ -19,4 +21,13 @@ public interface VendorService {
 	public Optional<Vendor> getVendorByName(String vendorName);
 	public List<Vendor> searchVendorsByName(String keyword);
 	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search);
+	
+	
+	boolean isVendorNameDuplicate(String vendorName, Long vendorId);
+
+    boolean isEmailDuplicate(String email, Long vendorId);
+
+    boolean isEinNumberDuplicate(String einNumber, Long vendorId);
+
+    boolean isPhoneNumberDuplicate(String phoneNumber, Long vendorId);
 }

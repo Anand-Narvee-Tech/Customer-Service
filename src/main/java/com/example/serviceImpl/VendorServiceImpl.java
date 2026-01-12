@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.example.DTO.VendorAddress;
 import com.example.entity.Vendor;
 import com.example.exception.DuplicateVendorException;
 import com.example.repository.VendorRepository;
@@ -20,6 +21,9 @@ import com.example.service.VendorService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 
 @Service
@@ -35,27 +39,50 @@ public class VendorServiceImpl implements VendorService {
     @Override
     public Vendor createVendor(Vendor vendor) {
 
-        StringBuilder duplicateFields = new StringBuilder();
+        List<String> duplicateFields = new ArrayList<>();
 
-        if (vendorRepository.findByVendorName(vendor.getVendorName()).isPresent())
-            duplicateFields.append("vendorName, ");
+        if (vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName()))
+            duplicateFields.add("vendorName");
 
-        if (vendorRepository.findByEmail(vendor.getEmail()).isPresent())
-            duplicateFields.append("email, ");
+        if (vendorRepository.existsByEmailIgnoreCase(vendor.getEmail()))
+            duplicateFields.add("email");
 
-        if (vendorRepository.findByEinNumber(vendor.getEinNumber()).isPresent())
-            duplicateFields.append("einNumber, ");
+        if (vendorRepository.existsByEinNumber(vendor.getEinNumber()))
+            duplicateFields.add("einNumber");
 
-        if (vendorRepository.findByPhoneNumber(vendor.getPhoneNumber()).isPresent())
-            duplicateFields.append("phoneNumber, ");
+        if (vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber()))
+            duplicateFields.add("phoneNumber");
 
-        if (duplicateFields.length() > 0) {
-            String fields = duplicateFields.substring(0, duplicateFields.length() - 2);
-            throw new DuplicateVendorException("Duplicate entry found in: " + fields);
+        if (!duplicateFields.isEmpty()) {
+            throw new DuplicateVendorException(
+                "Duplicate vendor found in fields: " + String.join(", ", duplicateFields)
+            );
         }
 
-        //  DO NOT SET vendorId
         return vendorRepository.save(vendor);
+    }
+
+    
+    // ---------------- DUPLICATES CHECKING ----------------
+    @Override
+    public boolean checkFieldExists(String field, String value) {
+
+        return switch (field) {
+            case "vendorName" ->
+                vendorRepository.existsByVendorNameIgnoreCase(value);
+
+            case "email" ->
+                vendorRepository.existsByEmailIgnoreCase(value);
+
+            case "einNumber" ->
+                vendorRepository.existsByEinNumber(value);
+
+            case "phoneNumber" ->
+                vendorRepository.existsByPhoneNumber(value);
+
+            default ->
+                throw new IllegalArgumentException("Invalid field: " + field);
+        };
     }
 
 
@@ -115,49 +142,71 @@ public class VendorServiceImpl implements VendorService {
     // ---------------- GET VENDORS WITH PAGINATION, SORTING & SEARCH ----------------
     @Override
     public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search) {
-        Pageable pageable = PageRequest.of(page, size); // sort will be applied via Specification for embedded fields
+
+        // 🔹 Resolve embedded field names
+        String resolvedSortField = sortField;
+
+        if ("city".equalsIgnoreCase(sortField)) {
+            resolvedSortField = "vendorAddress.city";
+        } else if ("state".equalsIgnoreCase(sortField)) {
+            resolvedSortField = "vendorAddress.state";
+        }
+
+        final String finalSortField = resolvedSortField;
+        final String finalSortDir = sortDir;
+
+        // 🔹 Pageable sorting (ONLY for root fields)
+        Sort sort = Sort.unsorted();
+
+        if (StringUtils.hasText(finalSortField) && !finalSortField.contains(".")) {
+            sort = "desc".equalsIgnoreCase(finalSortDir)
+                    ? Sort.by(finalSortField).descending()
+                    : Sort.by(finalSortField).ascending();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         Specification<Vendor> spec = (root, query, cb) -> {
+
             List<Predicate> predicates = new ArrayList<>();
 
+            //  Search
             if (StringUtils.hasText(search)) {
-                // Root fields
-                predicates.add(cb.like(cb.lower(root.get("vendorName")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("email")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("einNumber")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("phoneNumber")), "%" + search.toLowerCase() + "%"));
 
-                // Embedded fields
-                predicates.add(cb.like(cb.lower(root.get("vendorAddress").get("street")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("vendorAddress").get("suite")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("vendorAddress").get("city")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("vendorAddress").get("state")), "%" + search.toLowerCase() + "%"));
-                predicates.add(cb.like(cb.lower(root.get("vendorAddress").get("zipCode")), "%" + search.toLowerCase() + "%"));
+                String pattern = "%" + search.toLowerCase() + "%";
+
+                Join<Vendor, VendorAddress> address =
+                        root.join("vendorAddress", JoinType.LEFT);
+
+                predicates.add(cb.like(cb.lower(root.get("vendorName")), pattern));
+                predicates.add(cb.like(cb.lower(root.get("email")), pattern));
+                predicates.add(cb.like(cb.lower(root.get("einNumber")), pattern));
+                predicates.add(cb.like(cb.lower(root.get("phoneNumber")), pattern));
+                predicates.add(cb.like(cb.lower(address.get("city")), pattern));
+                predicates.add(cb.like(cb.lower(address.get("state")), pattern));
             }
 
-            // ---------------- SORTING ----------------
-            if (StringUtils.hasText(sortField)) {
-                if (sortField.contains(".")) {
-                    // Embedded field
-                    String[] parts = sortField.split("\\.");
-                    if (parts.length == 2) {
-                        query.orderBy(sortDir.equalsIgnoreCase("desc")
-                                ? cb.desc(root.get(parts[0]).get(parts[1]))
-                                : cb.asc(root.get(parts[0]).get(parts[1])));
-                    }
-                } else {
-                    // Root field
-                    query.orderBy(sortDir.equalsIgnoreCase("desc")
-                            ? cb.desc(root.get(sortField))
-                            : cb.asc(root.get(sortField)));
-                }
+            //  Embedded field sorting (handled here, NOT pageable)
+            if (StringUtils.hasText(finalSortField) && finalSortField.contains(".")) {
+                String[] parts = finalSortField.split("\\.");
+
+                Path<?> sortPath = root.get(parts[0]).get(parts[1]);
+
+                query.orderBy(
+                        "desc".equalsIgnoreCase(finalSortDir)
+                                ? cb.desc(sortPath)
+                                : cb.asc(sortPath)
+                );
             }
 
-            return predicates.isEmpty() ? null : cb.or(predicates.toArray(new Predicate[0]));
+            return predicates.isEmpty()
+                    ? cb.conjunction()
+                    : cb.or(predicates.toArray(new Predicate[0]));
         };
 
         return vendorRepository.findAll(spec, pageable);
     }
+
 
 
     // ---------------- GET VENDOR BY ID ----------------
@@ -184,5 +233,53 @@ public class VendorServiceImpl implements VendorService {
         List<Vendor> vendors = vendorRepository.findByEmailEndingWith(domain);
         if (vendors.isEmpty()) throw new RuntimeException("No vendors found for domain: " + domain);
         return vendors;
+    }
+    
+    @Override
+    public boolean isVendorNameDuplicate(String vendorName, Long vendorId) {
+        if (vendorName == null || vendorName.isBlank()) {
+            return false;
+        }
+        if (vendorId != null) {
+            return vendorRepository
+                    .existsByVendorNameIgnoreCaseAndVendorIdNot(vendorName, vendorId);
+        }
+        return vendorRepository.existsByVendorNameIgnoreCase(vendorName);
+    }
+    
+    @Override
+    public boolean isEmailDuplicate(String email, Long vendorId) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        if (vendorId != null) {
+            return vendorRepository
+                    .existsByEmailIgnoreCaseAndVendorIdNot(email, vendorId);
+        }
+        return vendorRepository.existsByEmailIgnoreCase(email);
+    }
+    
+    @Override
+    public boolean isEinNumberDuplicate(String einNumber, Long vendorId) {
+        if (einNumber == null || einNumber.isBlank()) {
+            return false;
+        }
+        if (vendorId != null) {
+            return vendorRepository
+                    .existsByEinNumberIgnoreCaseAndVendorIdNot(einNumber, vendorId);
+        }
+        return vendorRepository.existsByEinNumberIgnoreCase(einNumber);
+    }
+    
+    @Override
+    public boolean isPhoneNumberDuplicate(String phoneNumber, Long vendorId) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return false;
+        }
+        if (vendorId != null) {
+            return vendorRepository
+                    .existsByPhoneNumberAndVendorIdNot(phoneNumber, vendorId);
+        }
+        return vendorRepository.existsByPhoneNumber(phoneNumber);
     }
 }

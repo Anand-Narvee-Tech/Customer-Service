@@ -2,7 +2,9 @@ package com.example.controller;
 
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,22 @@ public class VendorController {
                 HttpStatus.OK
         );
     }
+	
+	
+	@GetMapping("/exists")
+	public ResponseEntity<Map<String, Object>> checkVendorFieldExists(@RequestParam String field, @RequestParam String value){
+		
+		boolean exists = vendorServiceImpl.checkFieldExists(field, value);
+		
+		Map<String, Object> response = new HashMap<>();
+		response.put("field", field);
+		response.put("value", value);
+		response.put("exists", exists);
+		response.put("message", exists ? field +"already exists" : field + "is available");
+		
+		return ResponseEntity.ok(response);
+	}
+	
 	
 	@GetMapping("/{vendorId}")
 	public ResponseEntity<RestAPIResponse> getById(@PathVariable Long vendorId){
@@ -101,7 +119,64 @@ public class VendorController {
 			return new ResponseEntity<>(new RestAPIResponse("error","Getting Data failed"),HttpStatus.OK);
 	}
     }
-		
+	
+    
+    @GetMapping("/exists/vendor-name/{vendorName}")
+    public ResponseEntity<RestAPIResponse> checkVendorName(
+            @PathVariable String vendorName,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "Vendor name already exists" : "Vendor name is available",
+                        exists ));
+    }
+    
+    @GetMapping("/exists/email/{email}")
+    public ResponseEntity<RestAPIResponse> checkEmail(
+            @PathVariable String email,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isEmailDuplicate(email, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "Email already exists" : "Email is available",
+                        exists ));
+    }
+    
+    @GetMapping("/exists/ein-number/{einNumber}")
+    public ResponseEntity<RestAPIResponse> checkEinNumber(
+            @PathVariable String einNumber,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isEinNumberDuplicate(einNumber, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "EIN Number already exists" : "EIN Number is available",
+                        exists ));
+    }
+    
+    @GetMapping("/exists/phone-number/{phoneNumber}")
+    public ResponseEntity<RestAPIResponse> checkPhoneNumber(
+            @PathVariable String phoneNumber,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isPhoneNumberDuplicate(phoneNumber, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "Phone number already exists" : "Phone number is available",
+                        exists));
+    }
+    
     @GetMapping("/searchAndSort")
     public ResponseEntity<RestAPIResponse> searchAndSortVendors(
             @RequestParam(required = false, defaultValue = "") String keyword,

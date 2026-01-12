@@ -39,7 +39,24 @@ public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecif
     // ---------------- SEARCH BY EMAIL DOMAIN ----------------
     List<Vendor> findByEmailEndingWith(String domain);
     Optional<Vendor> findByEmailContains(String domain);
+    
+  
+
+    boolean existsByEinNumber(String einNumber);
 
     // ---------------- SEARCH BY NAME ----------------
     List<Vendor> findByVendorNameContainingIgnoreCase(String name);
+    
+    
+    boolean existsByVendorNameIgnoreCase(String vendorName);
+    boolean existsByVendorNameIgnoreCaseAndVendorIdNot(String vendorName, Long vendorId);
+
+    boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmailIgnoreCaseAndVendorIdNot(String email, Long vendorId);
+
+    boolean existsByEinNumberIgnoreCase(String einNumber);
+    boolean existsByEinNumberIgnoreCaseAndVendorIdNot(String einNumber, Long vendorId);
+
+    boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumberAndVendorIdNot(String phoneNumber, Long vendorId);
 }
