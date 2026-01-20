@@ -28,6 +28,8 @@
 
 package com.example.entity;
 
+import java.time.LocalDateTime;
+
 import com.example.DTO.VendorAddress;
 
 import jakarta.persistence.Column;
@@ -36,6 +38,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -72,7 +75,15 @@ public class Vendor {
 
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
+    
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt; 
 
     @Embedded
     private VendorAddress vendorAddress; // ✅ embeddable
+    
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

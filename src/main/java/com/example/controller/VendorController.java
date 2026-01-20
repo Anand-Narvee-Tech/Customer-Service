@@ -200,6 +200,28 @@ public class VendorController {
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    @GetMapping("/count")
+    public ResponseEntity<RestAPIResponse> getVendorCount() {
+
+        Long vendorCount = vendorServiceImpl.fetchVendorCount();
+
+        return new ResponseEntity<>(
+                new RestAPIResponse("success", "Vendor count fetched successfully", vendorCount),
+                HttpStatus.OK
+        );
+    }
+    
+    @GetMapping("/recent")
+    public ResponseEntity<RestAPIResponse> getRecentVendors(){
+    	List<String> vendors = vendorServiceImpl.getVendorsAddedLast24Hours();
+    	
+    	String message= vendors.isEmpty()
+    			                      ? "No vendors added in the last 24 hours"
+    			                      : vendors.size() + "vendors added in the last 24 hours";
+    	return ResponseEntity.ok(new RestAPIResponse("success", message, vendors));
+    }
+    
 
 		@PutMapping("/{vendorId}")
 		public ResponseEntity<RestAPIResponse> updateVendor(@PathVariable Long vendorId, @RequestBody Vendor vendor){

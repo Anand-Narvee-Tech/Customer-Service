@@ -1,5 +1,6 @@
 package com.example.serviceImpl;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -282,4 +283,15 @@ public class VendorServiceImpl implements VendorService {
         }
         return vendorRepository.existsByPhoneNumber(phoneNumber);
     }
+    
+        @Override
+        public Long fetchVendorCount() { 
+        return vendorRepository.getVendorCount();
+    }
+        
+        @Override
+        public List<String> getVendorsAddedLast24Hours(){
+        	LocalDateTime since = LocalDateTime.now().minusHours(24);
+        	return vendorRepository.findVendorsAddedSince(since);
+        }
 }

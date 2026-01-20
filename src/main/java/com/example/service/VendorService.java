@@ -22,6 +22,7 @@ public interface VendorService {
 	public List<Vendor> searchVendorsByName(String keyword);
 	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search);
 	
+	public Long fetchVendorCount();
 	
 	boolean isVendorNameDuplicate(String vendorName, Long vendorId);
 
@@ -30,4 +31,6 @@ public interface VendorService {
     boolean isEinNumberDuplicate(String einNumber, Long vendorId);
 
     boolean isPhoneNumberDuplicate(String phoneNumber, Long vendorId);
+    
+    public List<String> getVendorsAddedLast24Hours();
 }

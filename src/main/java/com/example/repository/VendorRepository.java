@@ -1,5 +1,6 @@
 package com.example.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,4 +60,10 @@ public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecif
 
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsByPhoneNumberAndVendorIdNot(String phoneNumber, Long vendorId);
+    
+    @Query("SELECT COUNT(v) FROM Vendor v")
+    Long getVendorCount();
+    
+    @Query("SELECT v.vendorName FROM Vendor v WHERE v.createdAt >= :since")
+    List<String> findVendorsAddedSince(@Param("since") LocalDateTime since);
 }
