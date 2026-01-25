@@ -2,7 +2,11 @@ package com.example.controller;
 
 
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,7 +23,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.DTO.RestAPIResponse;
+import com.example.DTO.VendorAddressDTO;
+import com.example.DTO.VendorDTO;
 import com.example.entity.Vendor;
+import com.example.repository.VendorRepository;
 import com.example.serviceImpl.VendorServiceImpl;
 
 @RestController
@@ -29,15 +36,37 @@ public class VendorController {
 	@Autowired 
 	private VendorServiceImpl vendorServiceImpl;
 	
+	@Autowired
+	private VendorRepository vendorRepository;
+	
 	@PostMapping("/save")
-	public ResponseEntity<RestAPIResponse> saveVendor(@RequestBody Vendor vendor){
-		try {
-			 return new ResponseEntity<>(new RestAPIResponse("success","Registered Successfully",vendorServiceImpl.createVendor(vendor)),HttpStatus.OK);
-		} catch (Exception e) {
-			return new ResponseEntity<>(new RestAPIResponse("error","registerd failed"),HttpStatus.OK);
+    public ResponseEntity<RestAPIResponse> saveVendor(@RequestBody Vendor vendor) {
+
+        Vendor savedVendor = vendorServiceImpl.createVendor(vendor);
+
+        return new ResponseEntity<>(
+                new RestAPIResponse("success", "Registered Successfully", savedVendor),
+                HttpStatus.OK
+        );
+    }
+	
+	
+	@GetMapping("/exists")
+	public ResponseEntity<Map<String, Object>> checkVendorFieldExists(@RequestParam String field, @RequestParam String value){
+		
+		boolean exists = vendorServiceImpl.checkFieldExists(field, value);
+		
+		Map<String, Object> response = new HashMap<>();
+		response.put("field", field);
+		response.put("value", value);
+		response.put("exists", exists);
+		response.put("message", exists ? field +"already exists" : field + "is available");
+		
+		return ResponseEntity.ok(response);
 	}
-}
-	@GetMapping("/{vendorId}")
+	
+	
+	@GetMapping("/{vendorId:\\d+}")
 	public ResponseEntity<RestAPIResponse> getById(@PathVariable Long vendorId){
 		try {
 			return new ResponseEntity<>(new RestAPIResponse("Success", "Getting the Vendor Data successfully By ID", vendorServiceImpl.getById(vendorId)), HttpStatus.OK);
@@ -58,6 +87,32 @@ public class VendorController {
 		
 	}
 	
+	@GetMapping("/by-name")
+	public ResponseEntity<List<VendorDTO>> searchVendors(@RequestParam String name) {
+	    List<Vendor> vendors = vendorServiceImpl.searchByName(name);
+
+	    List<VendorDTO> response = vendors.stream().map(vendor -> {
+	        VendorAddressDTO addr = new VendorAddressDTO(
+	            vendor.getVendorAddress().getStreet(),
+	            vendor.getVendorAddress().getSuite(),
+	            vendor.getVendorAddress().getCity(),
+	            vendor.getVendorAddress().getState(),
+	            vendor.getVendorAddress().getZipCode()
+	        );
+
+	        return new VendorDTO(
+	           vendor.getVendorId(), 
+	            vendor.getVendorName(),
+	            vendor.getEmail(),
+	            vendor.getPhoneNumber(),
+	            addr
+	        );
+	    }).collect(Collectors.toList());
+
+	    return ResponseEntity.ok(response);
+	}
+
+
     @GetMapping("/getall")
 	public ResponseEntity<RestAPIResponse> getAllVendors(){
 		try {
@@ -66,19 +121,81 @@ public class VendorController {
 			return new ResponseEntity<>(new RestAPIResponse("error","Getting Data failed"),HttpStatus.OK);
 	}
     }
-		
+	
+    
+    @GetMapping("/exists/vendor-name/{vendorName}")
+    public ResponseEntity<RestAPIResponse> checkVendorName(
+            @PathVariable String vendorName,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "Vendor name already exists" : "Vendor name is available",
+                        exists ));
+    }
+    
+    @GetMapping("/exists/email/{email}")
+    public ResponseEntity<RestAPIResponse> checkEmail(
+            @PathVariable String email,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isEmailDuplicate(email, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "Email already exists" : "Email is available",
+                        exists ));
+    }
+    
+    @GetMapping("/exists/ein-number/{einNumber}")
+    public ResponseEntity<RestAPIResponse> checkEinNumber(
+            @PathVariable String einNumber,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isEinNumberDuplicate(einNumber, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "EIN Number already exists" : "EIN Number is available",
+                        exists ));
+    }
+    
+    @GetMapping("/exists/phone-number/{phoneNumber}")
+    public ResponseEntity<RestAPIResponse> checkPhoneNumber(
+            @PathVariable String phoneNumber,
+            @RequestParam(required = false) Long vendorId) {
+
+        boolean exists = vendorServiceImpl.isPhoneNumberDuplicate(phoneNumber, vendorId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "success",
+                        exists ? "Phone number already exists" : "Phone number is available",
+                        exists));
+    }
+    
     @GetMapping("/searchAndSort")
-    public ResponseEntity<RestAPIResponse> searchAndSortVendors( 
+    public ResponseEntity<RestAPIResponse> searchAndSortVendors(
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "vendorId") String sortField,
             @RequestParam(defaultValue = "asc") String sortDir) {
+
         try {
-            Page<Vendor> result = vendorServiceImpl.searchAndSortVendors(keyword, page, size, sortField, sortDir);
+            Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword);
+
             return new ResponseEntity<>(
-                    new RestAPIResponse("Success", "Vendors Retrieved Successfully (Search + Sort + Pagination)", result),
-                    HttpStatus.OK); 
+                    new RestAPIResponse("Success",
+                            "Vendors Retrieved Successfully (Search + Sort + Pagination)",
+                            result),
+                    HttpStatus.OK);
+
         } catch (Exception e) {
             return new ResponseEntity<>(
                     new RestAPIResponse("Error", "Failed to search and sort vendors: " + e.getMessage()),
@@ -86,6 +203,37 @@ public class VendorController {
         }
     }
     
+    @GetMapping("/count")
+    public ResponseEntity<RestAPIResponse> getVendorCount() {
+
+        Long vendorCount = vendorServiceImpl.fetchVendorCount();
+
+        return new ResponseEntity<>(
+                new RestAPIResponse("success", "Vendor count fetched successfully", vendorCount),
+                HttpStatus.OK
+        );
+    }
+    
+    @GetMapping("/recent")
+    public ResponseEntity<RestAPIResponse> getRecentVendors(){
+    	List<String> vendors = vendorServiceImpl.getVendorsAddedLast24Hours();
+    	
+    	String message= vendors.isEmpty()
+    			                      ? "No vendors added in the last 24 hours"
+    			                      : vendors.size() + "vendors added in the last 24 hours";
+    	return ResponseEntity.ok(new RestAPIResponse("success", message, vendors));
+    }
+    
+    @GetMapping("/count-per-month")
+    public ResponseEntity<RestAPIResponse> getVendorCountPerMonth() {
+        Map<String, Object> counts = vendorServiceImpl.fetchVendorCountPerMonth(LocalDate.now().getYear());
+        return ResponseEntity.ok(
+                new RestAPIResponse("success", "Vendor count per month fetched", counts)
+        );
+    }
+
+    
+
 		@PutMapping("/{vendorId}")
 		public ResponseEntity<RestAPIResponse> updateVendor(@PathVariable Long vendorId, @RequestBody Vendor vendor){
 			try {
@@ -96,18 +244,14 @@ public class VendorController {
 		}
 		
 		@DeleteMapping("/{vendorId}")
-		public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable Long vendorId){
-			 try {
-			       vendorServiceImpl.deleteVendor(vendorId);
-			        RestAPIResponse response = new RestAPIResponse(  "success",  "Deleted Successfully" );
-			        return ResponseEntity.ok(response);
-			    } catch (Exception e) {
-			        RestAPIResponse response = new RestAPIResponse( "error", "User Data is Not Deleted" );
-			        return ResponseEntity.ok(response);
-			    }
+		public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable Long vendorId) {
+
+		    vendorServiceImpl.deleteVendor(vendorId);
+
+		    return ResponseEntity.ok(
+		        new RestAPIResponse("success", "Vendor deleted successfully", null)
+		    );
 		}
-		
-		
-	
+
     
 }
