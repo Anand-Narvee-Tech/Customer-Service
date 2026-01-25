@@ -2,6 +2,7 @@ package com.example.controller;
 
 
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class VendorController {
 	}
 	
 	
-	@GetMapping("/{vendorId}")
+	@GetMapping("/{vendorId:\\d+}")
 	public ResponseEntity<RestAPIResponse> getById(@PathVariable Long vendorId){
 		try {
 			return new ResponseEntity<>(new RestAPIResponse("Success", "Getting the Vendor Data successfully By ID", vendorServiceImpl.getById(vendorId)), HttpStatus.OK);
@@ -100,6 +101,7 @@ public class VendorController {
 	        );
 
 	        return new VendorDTO(
+	           vendor.getVendorId(), 
 	            vendor.getVendorName(),
 	            vendor.getEmail(),
 	            vendor.getPhoneNumber(),
@@ -222,6 +224,15 @@ public class VendorController {
     	return ResponseEntity.ok(new RestAPIResponse("success", message, vendors));
     }
     
+    @GetMapping("/count-per-month")
+    public ResponseEntity<RestAPIResponse> getVendorCountPerMonth() {
+        Map<String, Object> counts = vendorServiceImpl.fetchVendorCountPerMonth(LocalDate.now().getYear());
+        return ResponseEntity.ok(
+                new RestAPIResponse("success", "Vendor count per month fetched", counts)
+        );
+    }
+
+    
 
 		@PutMapping("/{vendorId}")
 		public ResponseEntity<RestAPIResponse> updateVendor(@PathVariable Long vendorId, @RequestBody Vendor vendor){
@@ -233,18 +244,14 @@ public class VendorController {
 		}
 		
 		@DeleteMapping("/{vendorId}")
-		public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable Long vendorId){
-			 try {
-			       vendorServiceImpl.deleteVendor(vendorId);
-			        RestAPIResponse response = new RestAPIResponse(  "success",  "Deleted Successfully" );
-			        return ResponseEntity.ok(response);
-			    } catch (Exception e) {
-			        RestAPIResponse response = new RestAPIResponse( "error", "User Data is Not Deleted" );
-			        return ResponseEntity.ok(response);
-			    }
+		public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable Long vendorId) {
+
+		    vendorServiceImpl.deleteVendor(vendorId);
+
+		    return ResponseEntity.ok(
+		        new RestAPIResponse("success", "Vendor deleted successfully", null)
+		    );
 		}
-		
-		
-	
+
     
 }

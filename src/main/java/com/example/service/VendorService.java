@@ -1,6 +1,7 @@
 package com.example.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -33,4 +34,6 @@ public interface VendorService {
     boolean isPhoneNumberDuplicate(String phoneNumber, Long vendorId);
     
     public List<String> getVendorsAddedLast24Hours();
+    
+    public Map<String, Object> fetchVendorCountPerMonth(int year);
 }

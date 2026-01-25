@@ -1,8 +1,13 @@
 package com.example.serviceImpl;
 
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.example.DTO.VendorAddress;
+import com.example.DTO.VendorAddressDTO;
+import com.example.DTO.VendorDTO;
+import com.example.client.InvoiceFeignClient;
+import com.example.client.InvoiceUpdateFeignClient;
 import com.example.entity.Vendor;
 import com.example.exception.DuplicateVendorException;
 import com.example.repository.VendorRepository;
@@ -35,6 +44,13 @@ public class VendorServiceImpl implements VendorService {
 
     @Autowired
     private VendorRepository vendorRepository;
+    
+    @Autowired
+    private InvoiceUpdateFeignClient invoiceUpdateFeignClient;
+
+    
+    @Autowired
+    private InvoiceFeignClient invoiceFeignClient;
 
     // ---------------- CREATE VENDOR ----------------
     @Override
@@ -120,23 +136,51 @@ public class VendorServiceImpl implements VendorService {
     // ---------------- UPDATE VENDOR ----------------
     @Override
     public Vendor updateVendor(Long vendorId, Vendor vendor) {
-        return vendorRepository.findById(vendorId).map(existing -> {
-            existing.setVendorName(vendor.getVendorName());
-            existing.setPhoneNumber(vendor.getPhoneNumber());
-            existing.setEmail(vendor.getEmail());
-            existing.setEinNumber(vendor.getEinNumber());
 
-            if (vendor.getVendorAddress() != null) {
-                existing.setVendorAddress(vendor.getVendorAddress());
-            }
+        Vendor updatedVendor = vendorRepository.findById(vendorId)
+            .map(existing -> {
 
-            return vendorRepository.save(existing);
-        }).orElseThrow(() -> new RuntimeException("Vendor not found with id " + vendorId));
+                existing.setVendorName(vendor.getVendorName());
+                existing.setPhoneNumber(vendor.getPhoneNumber());
+                existing.setEmail(vendor.getEmail());
+                existing.setEinNumber(vendor.getEinNumber());
+
+                if (vendor.getVendorAddress() != null) {
+                    existing.setVendorAddress(vendor.getVendorAddress());
+                }
+
+                return vendorRepository.save(existing);
+            })
+            .orElseThrow(() -> new RuntimeException("Vendor not found with id " + vendorId));
+
+        //  AFTER DB UPDATE → notify invoice-service
+        VendorDTO dto = new VendorDTO();
+        dto.setVendorId(updatedVendor.getVendorId());
+        dto.setVendorName(updatedVendor.getVendorName());
+        dto.setEmail(updatedVendor.getEmail());
+        dto.setPhoneNumber(updatedVendor.getPhoneNumber());
+
+        dto.setVendorAddress(new VendorAddressDTO(
+            updatedVendor.getVendorAddress().getStreet(),
+            updatedVendor.getVendorAddress().getSuite(),
+            updatedVendor.getVendorAddress().getCity(),
+            updatedVendor.getVendorAddress().getState(),
+            updatedVendor.getVendorAddress().getZipCode()
+        ));
+
+        invoiceUpdateFeignClient.updateInvoicesByVendor(dto);
+
+        return updatedVendor;
     }
 
     // ---------------- DELETE VENDOR ----------------
     @Override
     public void deleteVendor(Long vendorId) {
+    	
+    	long invoiceCount = invoiceFeignClient.countInvoicesByVendor(vendorId);
+    	 if (invoiceCount > 0) {
+    	        throw new IllegalStateException("Vendor has " + invoiceCount + " Invoices, Delete invoices first.");
+    	    }
         vendorRepository.deleteById(vendorId);
     }
 
@@ -294,4 +338,45 @@ public class VendorServiceImpl implements VendorService {
         	LocalDateTime since = LocalDateTime.now().minusHours(24);
         	return vendorRepository.findVendorsAddedSince(since);
         }
+        
+        @Override
+        public Map<String, Object> fetchVendorCountPerMonth(int year) {
+List<Object[]> result = vendorRepository.getVendorCountPerMonth(year);
+
+List<String> labels = new ArrayList<>();
+List<Long> data = new ArrayList<>();
+
+// Initialize all months with 0
+Map<Integer, Long> monthData = new HashMap<>();
+for (int i = 1; i <= 12; i++) {
+    monthData.put(i, 0L);
+}
+
+// Fill data from query result
+for (Object[] row : result) {
+    Integer month = ((Number) row[0]).intValue();
+    Long count = ((Number) row[1]).longValue();
+    monthData.put(month, count);
+}
+
+// Prepare final labels and data
+for (int i = 1; i <= 12; i++) {
+    labels.add(getMonthName(i));
+    data.add(monthData.get(i));
+}
+
+Map<String, Object> response = new HashMap<>();
+response.put("labels", labels);
+response.put("data", data);
+
+return response;
+}
+
+private String getMonthName(int month) {
+return Month.of(month).getDisplayName(TextStyle.SHORT, Locale.ENGLISH); // Jan, Feb, Mar
+}
+
+
+
+
 }

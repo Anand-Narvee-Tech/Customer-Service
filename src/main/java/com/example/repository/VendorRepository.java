@@ -66,4 +66,21 @@ public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecif
     
     @Query("SELECT v.vendorName FROM Vendor v WHERE v.createdAt >= :since")
     List<String> findVendorsAddedSince(@Param("since") LocalDateTime since);
+    
+
+
+        @Query(
+          value = """
+            SELECT EXTRACT(MONTH FROM created_at) AS month,
+                   COUNT(*) AS count
+            FROM vendor_info
+            WHERE EXTRACT(YEAR FROM created_at) = :year
+            GROUP BY EXTRACT(MONTH FROM created_at)
+           ORDER BY EXTRACT(MONTH FROM created_at)
+          """,
+          nativeQuery = true
+        )
+        List<Object[]> getVendorCountPerMonth(@Param("year") int year);
+
+
 }
