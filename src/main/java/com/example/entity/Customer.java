@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class Customer {
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long customerId;
@@ -23,15 +23,14 @@ public class Customer {
 	private String lastName;
 	private String email;
 	private String moblieNumber;
-	
-	 private String billingAddress;
-	    private String shippingAddress;
 
-	    private String taxId;
-	    private String paymentTerms;   
-	    private String paymentMethod;
+	private String billingAddress;
+	private String shippingAddress;
 
-	    private String status; 
+	private String taxId;
+	private String paymentTerms;
+	private String paymentMethod;
 
+	private String status;
 
 }
