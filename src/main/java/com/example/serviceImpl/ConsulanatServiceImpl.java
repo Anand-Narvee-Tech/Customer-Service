@@ -31,30 +31,28 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	@Override
 	public Consultant save(Consultant req, MultipartFile file) {
+	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+	        throw new RuntimeException("Consultant already exists with this email");
+	    }
 
-		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
-			throw new RuntimeException("Consultant already exists with this email");
-		}
+	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
+	        throw new RuntimeException("Vendor ID is required");
+	    }
 
-		if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
-			throw new RuntimeException("Vendor ID is required");
-		}
+	    Long vendorId = req.getVendor().getVendorId();
 
-		Long vendorId = req.getVendor().getVendorId();
+	    Vendor vendor = vendorRepository.findById(vendorId)
+	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
 
-		Vendor vendor = vendorRepository.findById(vendorId)
-				.orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+	    req.setVendor(vendor);
 
-		req.setVendor(vendor);
+	    if (file != null && !file.isEmpty()) {
+	        req.setDocumentPath(storeFile(file));
+	    }
 
-		if (file != null && !file.isEmpty()) {
-			req.setDocumentPath(storeFile(file));
-		}
+	    req.setCreatedBy(getLoggedInUserId());
 
-		req.setCreatedAt(LocalDateTime.now());
-		req.setCreatedBy(getLoggedInUserId());
-
-		return consultantRepository.save(req);
+	    return consultantRepository.save(req);
 	}
 
 	// ✅ File storage
