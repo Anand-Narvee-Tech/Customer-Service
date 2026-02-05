@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -26,10 +28,11 @@ public class Consultant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
 
-    // Business ID (auto-generated, NOT NULL, immutable)
     @Column(nullable = false, unique = true, updatable = false)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String cid;
 
     private String firstName;
@@ -47,14 +50,17 @@ public class Consultant {
     @JoinColumn(name = "vendor_id", nullable = false)
     private Vendor vendor;
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime createdAt;
+    
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime updatedAt;
+    
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long createdBy;
+    
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long updatedBy;
-
-    // ------------------------
-    // Auto lifecycle handlers
-    // ------------------------
 
     @PrePersist
     public void prePersist() {
