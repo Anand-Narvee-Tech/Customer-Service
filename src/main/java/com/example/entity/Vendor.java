@@ -53,7 +53,10 @@ public class Vendor {
 
 	@Embedded
 	private VendorAddress vendorAddress; // ✅ embeddable
-
+    
+	@Column(name = "msa")
+	private String msaAgreement;
+	
 	@PrePersist
 	public void prePersist() {
 		this.createdAt = LocalDateTime.now();
