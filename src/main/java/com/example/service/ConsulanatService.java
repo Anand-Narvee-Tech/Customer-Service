@@ -19,4 +19,7 @@ public interface ConsulanatService {
 	public Consultant update(Long id, Consultant req, MultipartFile file);
 
 	public void deactivate(Long cid);
+	
+	List<Consultant> getConsultantsByVendorId(Long vendorId);
+
 }

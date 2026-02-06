@@ -26,52 +26,52 @@ import lombok.NoArgsConstructor;
 @Data
 public class Consultant {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private String cid;
+	@Column(nullable = false, unique = true, updatable = false)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private String cid;
 
-    private String firstName;
-    private String lastName;
+	private String firstName;
+	private String lastName;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+	@Column(nullable = false, unique = true)
+	private String email;
 
-    private String mobileNumber;
-    private BigDecimal billRate;
-    private String documentPath;
-    private String status;
+	private String mobileNumber;
+	private BigDecimal billRate;
+	private String documentPath;
+	private String status;
 
-    @ManyToOne
-    @JoinColumn(name = "vendor_id", nullable = false)
-    private Vendor vendor;
+	@ManyToOne
+	@JoinColumn(name = "vendor_id", nullable = false)
+	private Vendor vendor;
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private LocalDateTime createdAt;
-    
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private LocalDateTime updatedAt;
-    
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Long createdBy;
-    
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Long updatedBy;
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private LocalDateTime createdAt;
 
-    @PrePersist
-    public void prePersist() {
-        if (this.cid == null) {
-            this.cid = "CONS-" + UUID.randomUUID();
-        }
-        this.createdAt = LocalDateTime.now();
-    }
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private LocalDateTime updatedAt;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Long createdBy;
+
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Long updatedBy;
+
+	@PrePersist
+	public void prePersist() {
+		if (this.cid == null) {
+			this.cid = "CONS-" + UUID.randomUUID();
+		}
+		this.createdAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	public void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }
