@@ -65,9 +65,27 @@ public class VendorController {
 		}
 	}
 
+	@PutMapping(value = "/{vendorId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<RestAPIResponse> updateVendor(@PathVariable("vendorId") Long vendorId,
+			@RequestPart("vendor") String vendorJson,
+			@RequestPart(value = "msaFile", required = false) MultipartFile msaFile) {
+
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			Vendor vendor = objectMapper.readValue(vendorJson, Vendor.class);
+
+			Vendor updatedVendor = vendorServiceImpl.updateVendor(vendorId, vendor, msaFile);
+
+			return ResponseEntity.ok(new RestAPIResponse("success", "Vendor Data Updated Successfully", updatedVendor));
+
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(new RestAPIResponse("error", e.getMessage()));
+		}
+	}
+
 	@GetMapping("/exists")
-	public ResponseEntity<Map<String, Object>> checkVendorFieldExists(@RequestParam String field,
-			@RequestParam String value) {
+	public ResponseEntity<Map<String, Object>> checkVendorFieldExists(@RequestParam("field") String field,
+			@RequestParam("value") String value) {
 
 		boolean exists = vendorServiceImpl.checkFieldExists(field, value);
 
@@ -92,7 +110,7 @@ public class VendorController {
 	}
 
 	@GetMapping("/domain/{domain}")
-	public ResponseEntity<RestAPIResponse> getByCompanyDomain(@PathVariable String domain) {
+	public ResponseEntity<RestAPIResponse> getByCompanyDomain(@PathVariable("domain") String domain) {
 
 		try {
 			List<Vendor> vendors = vendorServiceImpl.getVendorByDomain(domain);
@@ -105,7 +123,7 @@ public class VendorController {
 	}
 
 	@GetMapping("/by-name")
-	public ResponseEntity<List<VendorDTO>> searchVendors(@RequestParam String name) {
+	public ResponseEntity<List<VendorDTO>> searchVendors(@RequestParam("name") String name) {
 		List<Vendor> vendors = vendorServiceImpl.searchByName(name);
 
 		List<VendorDTO> response = vendors.stream().map(vendor -> {
@@ -114,7 +132,7 @@ public class VendorController {
 					vendor.getVendorAddress().getState(), vendor.getVendorAddress().getZipCode());
 
 			return new VendorDTO(vendor.getVendorId(), vendor.getVendorName(), vendor.getEmail(),
-					vendor.getPhoneNumber(), addr);
+					vendor.getPhoneNumber(), vendor.getMsaAgreement(), vendor.getAddress(), vendor.getWebsite(), addr);
 		}).collect(Collectors.toList());
 
 		return ResponseEntity.ok(response);
@@ -132,8 +150,8 @@ public class VendorController {
 	}
 
 	@GetMapping("/exists/vendor-name/{vendorName}")
-	public ResponseEntity<RestAPIResponse> checkVendorName(@PathVariable String vendorName,
-			@RequestParam(required = false) Long vendorId) {
+	public ResponseEntity<RestAPIResponse> checkVendorName(@PathVariable("vendorName") String vendorName,
+			@RequestParam(value = "vendorId", required = false) Long vendorId) {
 
 		boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);
 
@@ -142,8 +160,8 @@ public class VendorController {
 	}
 
 	@GetMapping("/exists/email/{email}")
-	public ResponseEntity<RestAPIResponse> checkEmail(@PathVariable String email,
-			@RequestParam(required = false) Long vendorId) {
+	public ResponseEntity<RestAPIResponse> checkEmail(@PathVariable("email") String email,
+			@RequestParam(value = "vendorId", required = false) Long vendorId) {
 
 		boolean exists = vendorServiceImpl.isEmailDuplicate(email, vendorId);
 
@@ -152,8 +170,8 @@ public class VendorController {
 	}
 
 	@GetMapping("/exists/ein-number/{einNumber}")
-	public ResponseEntity<RestAPIResponse> checkEinNumber(@PathVariable String einNumber,
-			@RequestParam(required = false) Long vendorId) {
+	public ResponseEntity<RestAPIResponse> checkEinNumber(@PathVariable("einNumber") String einNumber,
+			@RequestParam(value = "vendorId", required = false) Long vendorId) {
 
 		boolean exists = vendorServiceImpl.isEinNumberDuplicate(einNumber, vendorId);
 
@@ -162,8 +180,8 @@ public class VendorController {
 	}
 
 	@GetMapping("/exists/phone-number/{phoneNumber}")
-	public ResponseEntity<RestAPIResponse> checkPhoneNumber(@PathVariable String phoneNumber,
-			@RequestParam(required = false) Long vendorId) {
+	public ResponseEntity<RestAPIResponse> checkPhoneNumber(@PathVariable("phoneNumber") String phoneNumber,
+			@RequestParam(value = "vendorId", required = false) Long vendorId) {
 
 		boolean exists = vendorServiceImpl.isPhoneNumberDuplicate(phoneNumber, vendorId);
 
@@ -173,10 +191,11 @@ public class VendorController {
 
 	@GetMapping("/searchAndSort")
 	public ResponseEntity<RestAPIResponse> searchAndSortVendors(
-			@RequestParam(required = false, defaultValue = "") String keyword,
-			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size,
-			@RequestParam(defaultValue = "vendorId") String sortField,
-			@RequestParam(defaultValue = "asc") String sortDir) {
+			@RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "size", defaultValue = "10") int size,
+			@RequestParam(value = "sortField", defaultValue = "vendorId") String sortField,
+			@RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
 
 		try {
 			Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword);
@@ -215,20 +234,8 @@ public class VendorController {
 		return ResponseEntity.ok(new RestAPIResponse("success", "Vendor count per month fetched", counts));
 	}
 
-	@PutMapping("/{vendorId}")
-	public ResponseEntity<RestAPIResponse> updateVendor(@PathVariable Long vendorId, @RequestBody Vendor vendor) {
-		try {
-			return new ResponseEntity<>(new RestAPIResponse("success", "Vendor Data Updated Successfully",
-					vendorServiceImpl.updateVendor(vendorId, vendor)), HttpStatus.OK);
-		} catch (Exception e) {
-			return new ResponseEntity<>(
-					new RestAPIResponse("error", "Updated failed or Inavlaid VendorId to update the data"),
-					HttpStatus.OK);
-		}
-	}
-
 	@DeleteMapping("/{vendorId}")
-	public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable Long vendorId) {
+	public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable("vendorId") Long vendorId) {
 
 		vendorServiceImpl.deleteVendor(vendorId);
 

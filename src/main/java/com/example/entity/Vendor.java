@@ -57,6 +57,12 @@ public class Vendor {
 	@Column(name = "msa")
 	private String msaAgreement;
 	
+	@Column(name = "address")
+	private String address;
+	
+	@Column(name = "website")
+	private String website;
+	
 	@PrePersist
 	public void prePersist() {
 		this.createdAt = LocalDateTime.now();

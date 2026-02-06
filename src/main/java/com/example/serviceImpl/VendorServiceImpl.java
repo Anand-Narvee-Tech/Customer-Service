@@ -182,37 +182,78 @@ public class VendorServiceImpl implements VendorService {
 
 	// ---------------- UPDATE VENDOR ----------------
 	@Override
-	public Vendor updateVendor(Long vendorId, Vendor vendor) {
+	public Vendor updateVendor(Long vendorId, Vendor vendor, MultipartFile msaFile) {
 
-		Vendor updatedVendor = vendorRepository.findById(vendorId).map(existing -> {
+	    Vendor existingVendor = vendorRepository.findById(vendorId)
+	            .orElseThrow(() -> new RuntimeException("Vendor not found with id " + vendorId));
 
-			existing.setVendorName(vendor.getVendorName());
-			existing.setPhoneNumber(vendor.getPhoneNumber());
-			existing.setEmail(vendor.getEmail());
-			existing.setEinNumber(vendor.getEinNumber());
+	    List<String> duplicateFields = new ArrayList<>();
 
-			if (vendor.getVendorAddress() != null) {
-				existing.setVendorAddress(vendor.getVendorAddress());
-			}
+	    // 🔁 Duplicate checks (exclude current vendor)
+	    if (!existingVendor.getVendorName().equalsIgnoreCase(vendor.getVendorName())
+	            && vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName())) {
+	        duplicateFields.add("vendorName");
+	    }
 
-			return vendorRepository.save(existing);
-		}).orElseThrow(() -> new RuntimeException("Vendor not found with id " + vendorId));
+	    if (!existingVendor.getEmail().equalsIgnoreCase(vendor.getEmail())
+	            && vendorRepository.existsByEmailIgnoreCase(vendor.getEmail())) {
+	        duplicateFields.add("email");
+	    }
 
-		// AFTER DB UPDATE → notify invoice-service
-		VendorDTO dto = new VendorDTO();
-		dto.setVendorId(updatedVendor.getVendorId());
-		dto.setVendorName(updatedVendor.getVendorName());
-		dto.setEmail(updatedVendor.getEmail());
-		dto.setPhoneNumber(updatedVendor.getPhoneNumber());
+	    if (!existingVendor.getEinNumber().equals(vendor.getEinNumber())
+	            && vendorRepository.existsByEinNumber(vendor.getEinNumber())) {
+	        duplicateFields.add("einNumber");
+	    }
 
-		dto.setVendorAddress(new VendorAddressDTO(updatedVendor.getVendorAddress().getStreet(),
-				updatedVendor.getVendorAddress().getSuite(), updatedVendor.getVendorAddress().getCity(),
-				updatedVendor.getVendorAddress().getState(), updatedVendor.getVendorAddress().getZipCode()));
+	    if (!existingVendor.getPhoneNumber().equals(vendor.getPhoneNumber())
+	            && vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber())) {
+	        duplicateFields.add("phoneNumber");
+	    }
 
-		invoiceUpdateFeignClient.updateInvoicesByVendor(dto);
+	    if (!duplicateFields.isEmpty()) {
+	        throw new DuplicateVendorException(
+	                "Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
+	    }
 
-		return updatedVendor;
+	    // 🔄 Update fields
+	    existingVendor.setVendorName(vendor.getVendorName());
+	    existingVendor.setEmail(vendor.getEmail());
+	    existingVendor.setPhoneNumber(vendor.getPhoneNumber());
+	    existingVendor.setEinNumber(vendor.getEinNumber());
+
+	    if (vendor.getVendorAddress() != null) {
+	        existingVendor.setVendorAddress(vendor.getVendorAddress());
+	    }
+
+	    // 📎 MSA File upload (optional)
+	    if (msaFile != null && !msaFile.isEmpty()) {
+	        existingVendor.setMsaAgreement(storeMsaFile(msaFile));
+	    }
+
+	    Vendor updatedVendor = vendorRepository.save(existingVendor);
+
+	    // 📤 Notify invoice-service
+	    VendorDTO dto = new VendorDTO();
+	    dto.setVendorId(updatedVendor.getVendorId());
+	    dto.setVendorName(updatedVendor.getVendorName());
+	    dto.setEmail(updatedVendor.getEmail());
+	    dto.setPhoneNumber(updatedVendor.getPhoneNumber());
+
+	    if (updatedVendor.getVendorAddress() != null) {
+	        dto.setVendorAddress(new VendorAddressDTO(
+	                updatedVendor.getVendorAddress().getStreet(),
+	                updatedVendor.getVendorAddress().getSuite(),
+	                updatedVendor.getVendorAddress().getCity(),
+	                updatedVendor.getVendorAddress().getState(),
+	                updatedVendor.getVendorAddress().getZipCode()
+	        ));
+	    }
+
+	    invoiceUpdateFeignClient.updateInvoicesByVendor(dto);
+
+	    return updatedVendor;
 	}
+
 
 	// ---------------- DELETE VENDOR ----------------
 	@Override
