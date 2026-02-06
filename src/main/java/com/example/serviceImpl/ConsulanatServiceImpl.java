@@ -171,4 +171,15 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		return null;
 	}
 
+	@Override
+	public List<Consultant> getConsultantsByVendorId(Long vendorId) {
+
+	    if (!vendorRepository.existsById(vendorId)) {
+	        throw new RuntimeException("Vendor not found with id: " + vendorId);
+	    }
+
+	    return consultantRepository.findByVendor_VendorId(vendorId);
+	}
+
+
 }

@@ -16,4 +16,7 @@ public interface ConsultantRepository extends JpaRepository<Consultant, Long> {
 	List<Consultant> findByStatus(String status);
 
 	boolean existsByCid(String cid);
+
+	List<Consultant> findByVendor_VendorId(Long vendorId);
+
 }
