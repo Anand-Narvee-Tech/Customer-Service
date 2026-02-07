@@ -13,5 +13,8 @@ public class VendorDTO {
     private String vendorName;
     private String email;
     private String phoneNumber;
+    private String msaAgreement;
+    private String address;
+    private String website;
     private VendorAddressDTO vendorAddress;
 }

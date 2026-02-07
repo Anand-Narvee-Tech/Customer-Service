@@ -21,7 +21,7 @@ public interface VendorService {
 
 	public List<Vendor> getAll();
 
-	public Vendor updateVendor(Long vendorId, Vendor vendor);
+	public Vendor updateVendor(Long vendorId, Vendor vendor, MultipartFile msaFile);
 
 	public void deleteVendor(Long vendorId);
 
