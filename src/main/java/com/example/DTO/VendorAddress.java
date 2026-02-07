@@ -30,7 +30,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VendorAddress {
-
+    
+	private String country;
     private String street;
     private String suite;
     private String city;

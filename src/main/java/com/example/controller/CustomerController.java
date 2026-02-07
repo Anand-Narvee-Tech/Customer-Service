@@ -49,7 +49,7 @@ public class CustomerController {
 	}
 
 	@GetMapping("/{customerId}")
-	public ResponseEntity<RestAPIResponse> getById(@PathVariable Long customerId) {
+	public ResponseEntity<RestAPIResponse> getById(@PathVariable("customerId") Long customerId) {
 		try {
 			RestAPIResponse response = new RestAPIResponse("success", "User Data getting by Id Successfully",
 					customerServiceImpl.getById(customerId));
@@ -61,7 +61,8 @@ public class CustomerController {
 	}
 
 	@PutMapping("/{customerId}")
-	public ResponseEntity<RestAPIResponse> updateById(@PathVariable Long customerId, @RequestBody Customer customer) {
+	public ResponseEntity<RestAPIResponse> updateById(@PathVariable("customerId") Long customerId,
+			@RequestBody Customer customer) {
 		try {
 			RestAPIResponse response = new RestAPIResponse("success", "User Data Updated Successfully",
 					customerServiceImpl.updatedCustomer(customerId, customer));
@@ -74,7 +75,7 @@ public class CustomerController {
 	}
 
 	@DeleteMapping("/{customerId}")
-	public ResponseEntity<RestAPIResponse> deleteCustomer(@PathVariable Long customerId) {
+	public ResponseEntity<RestAPIResponse> deleteCustomer(@PathVariable("customerId") Long customerId) {
 		try {
 			customerServiceImpl.deleteById(customerId);
 			RestAPIResponse response = new RestAPIResponse("success", "Deleted Successfully");
