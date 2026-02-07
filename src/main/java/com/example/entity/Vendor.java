@@ -29,7 +29,6 @@ import lombok.Setter;
 
 @Setter
 @Getter
-
 public class Vendor {
 
 	@Id
@@ -52,17 +51,20 @@ public class Vendor {
 	private LocalDateTime createdAt;
 
 	@Embedded
-	private VendorAddress vendorAddress; // ✅ embeddable
-    
+	private VendorAddress vendorAddress;
+
+	@Column(name = "gstin")
+	private String gstin;
+
 	@Column(name = "msa")
 	private String msaAgreement;
-	
+
 	@Column(name = "address")
 	private String address;
-	
+
 	@Column(name = "website")
 	private String website;
-	
+
 	@PrePersist
 	public void prePersist() {
 		this.createdAt = LocalDateTime.now();
