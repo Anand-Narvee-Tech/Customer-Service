@@ -4,10 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.example.DTO.NetTerm;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -62,6 +65,13 @@ public class Consultant {
 
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private Long updatedBy;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "net_term")
+	private NetTerm netTerm;
+
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	private String client;
 
 	@PrePersist
 	public void prePersist() {
