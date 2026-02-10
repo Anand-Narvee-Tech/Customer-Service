@@ -3,9 +3,15 @@ package com.example.controller;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +22,15 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
+import com.example.DTO.SearchRequest;
 import com.example.entity.Consultant;
 import com.example.service.ConsulanatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,10 +121,10 @@ public class ConsuantCon {
 	}
 
 	// ================= GET ALL =================
-	@GetMapping("/getAll")
-	public ResponseEntity<RestAPIResponse> getAllConsultants() {
+	@PostMapping("/getAll")
+	public ResponseEntity<RestAPIResponse> getAllConsultants(@RequestBody SearchRequest request) {
 
-		List<Consultant> consultants = consultantServ.getAll();
+		Page<Consultant> consultants = consultantServ.getAllOrSearch(request);
 
 		return ResponseEntity.ok(new RestAPIResponse("success", "Fetched successfully", consultants));
 	}
@@ -158,5 +168,25 @@ public class ConsuantCon {
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
 				.body(resource);
 	}
+	
+	
+	@GetMapping("/net-terms")
+	public ResponseEntity<List<Map<String, Object>>> getNetTerms() {
+
+	    List<Map<String, Object>> response =
+	            Arrays.stream(NetTerm.values())
+	                    .map(t -> {
+	                        Map<String, Object> map = new HashMap<>();
+	                        map.put("code", t.name());
+	                        map.put("label", t.getLabel());
+	                        map.put("days", t.getDays());
+	                        return map;
+	                    })
+	                    .collect(Collectors.toList());
+
+	    return ResponseEntity.ok(response);
+	}
+
+
 
 }
