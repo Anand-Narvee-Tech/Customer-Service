@@ -114,57 +114,70 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	@Override
 	public Consultant update(Long id, Consultant req, MultipartFile file) {
 
-		// ================= Fetch existing =================
-		Consultant existing = consultantRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Consultant not found with id: " + id));
+	    // ================= Fetch existing =================
+	    Consultant existing = consultantRepository.findById(id)
+	            .orElseThrow(() ->
+	                    new IllegalArgumentException("Consultant not found with id: " + id)
+	            );
 
-		// ================= Email uniqueness =================
-		if (req.getEmail() != null && !req.getEmail().equalsIgnoreCase(existing.getEmail())
-				&& consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+	    // ================= Email uniqueness =================
+	    if (req.getEmail() != null
+	            && !req.getEmail().equalsIgnoreCase(existing.getEmail())
+	            && consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
 
-			throw new IllegalArgumentException("Consultant already exists with this email");
-		}
+	        throw new IllegalArgumentException("Consultant already exists with this email");
+	    }
 
-		// ================= Update fields =================
-		if (req.getFirstName() != null)
-			existing.setFirstName(req.getFirstName());
+	    // ================= Basic fields =================
+	    if (req.getFirstName() != null)
+	        existing.setFirstName(req.getFirstName());
 
-		if (req.getLastName() != null)
-			existing.setLastName(req.getLastName());
+	    if (req.getLastName() != null)
+	        existing.setLastName(req.getLastName());
 
-		if (req.getEmail() != null)
-			existing.setEmail(req.getEmail());
+	    if (req.getEmail() != null)
+	        existing.setEmail(req.getEmail());
 
-		if (req.getMobileNumber() != null)
-			existing.setMobileNumber(req.getMobileNumber());
+	    if (req.getMobileNumber() != null)
+	        existing.setMobileNumber(req.getMobileNumber());
 
-		if (req.getBillRate() != null)
-			existing.setBillRate(req.getBillRate());
+	    if (req.getBillRate() != null)
+	        existing.setBillRate(req.getBillRate());
 
-		if (req.getStatus() != null)
-			existing.setStatus(req.getStatus());
+	    if (req.getStatus() != null)
+	        existing.setStatus(req.getStatus());
 
-		// ================= Vendor =================
-		if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
+	    // ================= Net Term =================
+	    if (req.getNetTerm() != null)
+	        existing.setNetTerm(req.getNetTerm());
 
-			Long vendorId = req.getVendor().getVendorId();
+	    // ================= Client =================
+	    if (req.getClient() != null)
+	        existing.setClient(req.getClient());
 
-			Vendor vendor = vendorRepository.findById(vendorId)
-					.orElseThrow(() -> new IllegalArgumentException("Vendor not found with id: " + vendorId));
+	    // ================= Vendor =================
+	    if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
 
-			existing.setVendor(vendor);
-		}
+	        Long vendorId = req.getVendor().getVendorId();
 
-		// ================= File =================
-		if (file != null && !file.isEmpty()) {
-			existing.setDocumentPath(storeFile1(file));
-		}
+	        Vendor vendor = vendorRepository.findById(vendorId)
+	                .orElseThrow(() ->
+	                        new IllegalArgumentException("Vendor not found with id: " + vendorId)
+	                );
 
-		// ================= Audit =================
-		existing.setUpdatedBy(getLoggedInUserId());
-		// updatedAt handled by @PreUpdate
+	        existing.setVendor(vendor);
+	    }
 
-		return consultantRepository.save(existing);
+	    // ================= File =================
+	    if (file != null && !file.isEmpty()) {
+	        existing.setDocumentPath(storeFile1(file));
+	    }
+
+	    // ================= Audit =================
+	    existing.setUpdatedBy(getLoggedInUserId());
+	    // updatedAt handled by @PreUpdate
+
+	    return consultantRepository.save(existing);
 	}
 
 	private String storeFile1(MultipartFile file) {
