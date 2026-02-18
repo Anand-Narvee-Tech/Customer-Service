@@ -4,8 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.example.DTO.NetTerm;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,7 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,50 +27,62 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Table(name = "consultant")
 public class Consultant {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Long id;
 
-    // Business ID (auto-generated, NOT NULL, immutable)
-    @Column(nullable = false, unique = true, updatable = false)
-    private String cid;
+	@Column(nullable = false, unique = true, updatable = false)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private String cid;
 
-    private String firstName;
-    private String lastName;
+	private String firstName;
+	private String lastName;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+	@Column(nullable = false, unique = true)
+	private String email;
 
-    private String mobileNumber;
-    private BigDecimal billRate;
-    private String documentPath;
-    private String status;
+	private String mobileNumber;
+	private BigDecimal billRate;
+	private String documentPath;
+	private String status;
 
-    @ManyToOne
-    @JoinColumn(name = "vendor_id", nullable = false)
-    private Vendor vendor;
+	@ManyToOne
+	@JoinColumn(name = "vendor_id", nullable = false)
+	private Vendor vendor;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private Long createdBy;
-    private Long updatedBy;
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private LocalDateTime createdAt;
 
-    // ------------------------
-    // Auto lifecycle handlers
-    // ------------------------
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private LocalDateTime updatedAt;
 
-    @PrePersist
-    public void prePersist() {
-        if (this.cid == null) {
-            this.cid = "CONS-" + UUID.randomUUID();
-        }
-        this.createdAt = LocalDateTime.now();
-    }
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Long createdBy;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Long updatedBy;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "net_term")
+	private NetTerm netTerm;
+
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	private String client;
+
+	@PrePersist
+	public void prePersist() {
+		if (this.cid == null) {
+			this.cid = "CONS-" + UUID.randomUUID();
+		}
+		this.createdAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	public void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }

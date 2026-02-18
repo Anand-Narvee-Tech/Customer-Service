@@ -10,10 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.DTO.ConsultantRequest;
+import com.example.DTO.SearchRequest;
 import com.example.entity.Consultant;
 import com.example.entity.Vendor;
 import com.example.repository.ConsultantRepository;
@@ -31,7 +36,6 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	@Override
 	public Consultant save(Consultant req, MultipartFile file) {
-
 		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
 			throw new RuntimeException("Consultant already exists with this email");
 		}
@@ -51,7 +55,6 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 			req.setDocumentPath(storeFile(file));
 		}
 
-		req.setCreatedAt(LocalDateTime.now());
 		req.setCreatedBy(getLoggedInUserId());
 
 		return consultantRepository.save(req);
@@ -80,8 +83,32 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	}
 
 	@Override
-	public List<Consultant> getAll() {
-		return consultantRepository.findAll();
+	public Page<Consultant> getAllOrSearch(SearchRequest request) {
+
+		int pageNo = request.getPageNo() != null ? request.getPageNo() : 0;
+
+		Integer pageSize = request.getPageSize(); // 👈 NOT fixed
+
+		String sortField = request.getSortField() != null ? request.getSortField() : "id";
+
+		String sortBy = request.getSortBy() != null ? request.getSortBy() : "asc";
+
+		Sort sort = sortBy.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
+
+		Pageable pageable;
+
+		// 👉 If pageSize is NOT provided → unpaged
+		if (pageSize == null) {
+			pageable = Pageable.unpaged();
+		} else {
+			pageable = PageRequest.of(pageNo, pageSize, sort);
+		}
+
+		if (request.getKeyword() == null || request.getKeyword().isBlank()) {
+			return consultantRepository.findAll(pageable);
+		}
+
+		return consultantRepository.searchConsultants(request.getKeyword(), pageable);
 	}
 
 	@Override
@@ -171,6 +198,16 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	private Long getLoggedInUserId() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public List<Consultant> getConsultantsByVendorId(Long vendorId) {
+
+		if (!vendorRepository.existsById(vendorId)) {
+			throw new RuntimeException("Vendor not found with id: " + vendorId);
+		}
+
+		return consultantRepository.findByVendor_VendorId(vendorId);
 	}
 
 }
