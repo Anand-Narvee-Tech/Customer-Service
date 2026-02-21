@@ -41,7 +41,7 @@ public class Vendor {
 	@Column(nullable = false)
 	private String email;
 
-	@Column(name = "ein_number", nullable = false)
+	@Column(name = "ein_number")
 	private String einNumber;
 
 	@Column(name = "phone_number", nullable = false)
@@ -64,6 +64,10 @@ public class Vendor {
 
 	@Column(name = "website")
 	private String website;
+	
+	
+	@Column(name = "adminId")
+	private Long adminId;
 
 	@PrePersist
 	public void prePersist() {

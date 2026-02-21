@@ -127,22 +127,28 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 		// ================= Update fields =================
 		if (req.getFirstName() != null)
-			existing.setFirstName(req.getFirstName());
+		    existing.setFirstName(req.getFirstName());
 
 		if (req.getLastName() != null)
-			existing.setLastName(req.getLastName());
+		    existing.setLastName(req.getLastName());
 
 		if (req.getEmail() != null)
-			existing.setEmail(req.getEmail());
+		    existing.setEmail(req.getEmail());
 
 		if (req.getMobileNumber() != null)
-			existing.setMobileNumber(req.getMobileNumber());
+		    existing.setMobileNumber(req.getMobileNumber());
 
 		if (req.getBillRate() != null)
-			existing.setBillRate(req.getBillRate());
+		    existing.setBillRate(req.getBillRate());
 
 		if (req.getStatus() != null)
-			existing.setStatus(req.getStatus());
+		    existing.setStatus(req.getStatus());
+
+		if (req.getNetTerm() != null)
+		    existing.setNetTerm(req.getNetTerm());
+
+		if (req.getClient() != null)
+		    existing.setClient(req.getClient());
 
 		// ================= Vendor =================
 		if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
