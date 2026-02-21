@@ -81,36 +81,65 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	public Consultant getById(Long cid) {
 		return consultantRepository.findById(cid).orElseThrow(() -> new RuntimeException("Consultant not found"));
 	}
+//working
+//	@Override
+//	public Page<Consultant> getAllOrSearch(SearchRequest request) {
+//
+//		int pageNo = request.getPageNo() != null ? request.getPageNo() : 0;
+//
+//		Integer pageSize = request.getPageSize(); // 👈 NOT fixed
+//
+//		String sortField = request.getSortField() != null ? request.getSortField() : "id";
+//		
+//
+//		String sortBy = request.getSortBy() != null ? request.getSortBy() : "asc";
+//
+//		Sort sort = sortBy.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
+//
+//		Pageable pageable;
+//
+//		// 👉 If pageSize is NOT provided → unpaged
+//		if (pageSize == null) {
+//			pageable = Pageable.unpaged();
+//		} else {
+//			pageable = PageRequest.of(pageNo, pageSize, sort);
+//		}
+//
+//		if (request.getKeyword() == null || request.getKeyword().isBlank()) {
+//			return consultantRepository.findAll(pageable);
+//		}
+//
+//		return consultantRepository.searchConsultants(request.getKeyword(), pageable);
+//	}
+	
+	//Bhargav 21-02-26	
+		@Override
+		public Page<Consultant> getConsultants(String keyword,
+		                                       Long adminId,
+		                                       PageRequest pageable) {
 
-	@Override
-	public Page<Consultant> getAllOrSearch(SearchRequest request) {
+		    // If both keyword and adminId present
+		    if (keyword != null && !keyword.isBlank() && adminId != null) {
+		        return consultantRepository
+		                .findByAdminIdAndKeyword(adminId, keyword, pageable);
+		    }
 
-		int pageNo = request.getPageNo() != null ? request.getPageNo() : 0;
+		    // If only adminId present
+		    if (adminId != null) {
+		        return consultantRepository.findByAdminId(adminId, pageable);
+		    }
 
-		Integer pageSize = request.getPageSize(); // 👈 NOT fixed
+		    // If only keyword present
+		    if (keyword != null && !keyword.isBlank()) {
+		        return consultantRepository.searchByKeyword(keyword, pageable);
+		    }
 
-		String sortField = request.getSortField() != null ? request.getSortField() : "id";
-
-		String sortBy = request.getSortBy() != null ? request.getSortBy() : "asc";
-
-		Sort sort = sortBy.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
-
-		Pageable pageable;
-
-		// 👉 If pageSize is NOT provided → unpaged
-		if (pageSize == null) {
-			pageable = Pageable.unpaged();
-		} else {
-			pageable = PageRequest.of(pageNo, pageSize, sort);
-		}
-
-		if (request.getKeyword() == null || request.getKeyword().isBlank()) {
-			return consultantRepository.findAll(pageable);
-		}
-
-		return consultantRepository.searchConsultants(request.getKeyword(), pageable);
-	}
-
+		    // If nothing present
+		    return consultantRepository.findAll(pageable);
+		}	
+	
+	//Bhargav 21-02-26	
+	
 	@Override
 	public Consultant update(Long id, Consultant req, MultipartFile file) {
 
@@ -216,4 +245,6 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		return consultantRepository.findByVendor_VendorId(vendorId);
 	}
 
+	
+	
 }

@@ -8,22 +8,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import org.springframework.data.domain.Sort;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.apache.hc.core5.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +37,7 @@ import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
 import com.example.DTO.SearchRequest;
 import com.example.entity.Consultant;
+import com.example.repository.ConsultantRepository;
 import com.example.service.ConsulanatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -41,6 +47,11 @@ public class ConsuantCon {
 
 	@Autowired
 	private ConsulanatService consultantServ;
+	
+	
+	@Autowired
+	private ConsultantRepository consultantRepository;
+	
 
 	// ================= CREATE =================
 //	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -121,14 +132,31 @@ public class ConsuantCon {
 	}
 
 	// ================= GET ALL =================
-	@PostMapping("/getAll")
-	public ResponseEntity<RestAPIResponse> getAllConsultants(@RequestBody SearchRequest request) {
 
-		Page<Consultant> consultants = consultantServ.getAllOrSearch(request);
+//Bhargav 21-02-26
+	@PostMapping("/searchAndSort")
+	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "10") int size,
+	        @RequestParam(defaultValue = "id") String sortField,
+	        @RequestParam(defaultValue = "asc") String sortDir,
+	        @RequestParam(required = false) String keyword,
+	        @RequestParam(required = false) Long adminId) {
 
-		return ResponseEntity.ok(new RestAPIResponse("success", "Fetched successfully", consultants));
+	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
+	            Sort.by(sortField).descending() :
+	            Sort.by(sortField).ascending();
+
+	    PageRequest pageable = PageRequest.of(page, size, sort);
+
+	    Page<Consultant> result =
+	    		consultantServ.getConsultants(keyword, adminId, pageable);
+
+	    return ResponseEntity.ok(result);
 	}
-
+	
+//Bhargav 21-02-26
+	
 	// ================= DEACTIVATE =================
 	@DeleteMapping("/{id}")
 	public ResponseEntity<RestAPIResponse> deactivateConsultant(@PathVariable("id") Long id) {
