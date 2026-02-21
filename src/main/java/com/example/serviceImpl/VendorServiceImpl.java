@@ -268,64 +268,69 @@ public class VendorServiceImpl implements VendorService {
 
 	// ---------------- GET VENDORS WITH PAGINATION, SORTING & SEARCH
 	// ----------------
-	@Override
-	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search) {
-
-		// 🔹 Resolve embedded field names
-		String resolvedSortField = sortField;
-
-		if ("city".equalsIgnoreCase(sortField)) {
-			resolvedSortField = "vendorAddress.city";
-		} else if ("state".equalsIgnoreCase(sortField)) {
-			resolvedSortField = "vendorAddress.state";
-		}
-
-		final String finalSortField = resolvedSortField;
-		final String finalSortDir = sortDir;
-
-		// 🔹 Pageable sorting (ONLY for root fields)
-		Sort sort = Sort.unsorted();
-
-		if (StringUtils.hasText(finalSortField) && !finalSortField.contains(".")) {
-			sort = "desc".equalsIgnoreCase(finalSortDir) ? Sort.by(finalSortField).descending()
-					: Sort.by(finalSortField).ascending();
-		}
-
-		Pageable pageable = PageRequest.of(page, size, sort);
-
-		Specification<Vendor> spec = (root, query, cb) -> {
-
-			List<Predicate> predicates = new ArrayList<>();
-
-			// Search
-			if (StringUtils.hasText(search)) {
-
-				String pattern = "%" + search.toLowerCase() + "%";
-
-				Join<Vendor, VendorAddress> address = root.join("vendorAddress", JoinType.LEFT);
-
-				predicates.add(cb.like(cb.lower(root.get("vendorName")), pattern));
-				predicates.add(cb.like(cb.lower(root.get("email")), pattern));
-				predicates.add(cb.like(cb.lower(root.get("einNumber")), pattern));
-				predicates.add(cb.like(cb.lower(root.get("phoneNumber")), pattern));
-				predicates.add(cb.like(cb.lower(address.get("city")), pattern));
-				predicates.add(cb.like(cb.lower(address.get("state")), pattern));
-			}
-
-			// Embedded field sorting (handled here, NOT pageable)
-			if (StringUtils.hasText(finalSortField) && finalSortField.contains(".")) {
-				String[] parts = finalSortField.split("\\.");
-
-				Path<?> sortPath = root.get(parts[0]).get(parts[1]);
-
-				query.orderBy("desc".equalsIgnoreCase(finalSortDir) ? cb.desc(sortPath) : cb.asc(sortPath));
-			}
-
-			return predicates.isEmpty() ? cb.conjunction() : cb.or(predicates.toArray(new Predicate[0]));
-		};
-
-		return vendorRepository.findAll(spec, pageable);
-	}
+	
+// Bhargav - 20/02/26
+	
+//	@Override
+//	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search) {
+//
+//		// 🔹 Resolve embedded field names
+//		String resolvedSortField = sortField;
+//
+//		if ("city".equalsIgnoreCase(sortField)) {
+//			resolvedSortField = "vendorAddress.city";
+//		} else if ("state".equalsIgnoreCase(sortField)) {
+//			resolvedSortField = "vendorAddress.state";
+//		}
+//
+//		final String finalSortField = resolvedSortField;
+//		final String finalSortDir = sortDir;
+//
+//		// 🔹 Pageable sorting (ONLY for root fields)
+//		Sort sort = Sort.unsorted();
+//
+//		if (StringUtils.hasText(finalSortField) && !finalSortField.contains(".")) {
+//			sort = "desc".equalsIgnoreCase(finalSortDir) ? Sort.by(finalSortField).descending()
+//					: Sort.by(finalSortField).ascending();
+//		}
+//
+//		Pageable pageable = PageRequest.of(page, size, sort);
+//
+//		Specification<Vendor> spec = (root, query, cb) -> {
+//
+//			List<Predicate> predicates = new ArrayList<>();
+//
+//			// Search
+//			if (StringUtils.hasText(search)) {
+//
+//				String pattern = "%" + search.toLowerCase() + "%";
+//
+//				Join<Vendor, VendorAddress> address = root.join("vendorAddress", JoinType.LEFT);
+//
+//				predicates.add(cb.like(cb.lower(root.get("vendorName")), pattern));
+//				predicates.add(cb.like(cb.lower(root.get("email")), pattern));
+//				predicates.add(cb.like(cb.lower(root.get("einNumber")), pattern));
+//				predicates.add(cb.like(cb.lower(root.get("phoneNumber")), pattern));
+//				predicates.add(cb.like(cb.lower(address.get("city")), pattern));
+//				predicates.add(cb.like(cb.lower(address.get("state")), pattern));
+//			}
+//
+//			// Embedded field sorting (handled here, NOT pageable)
+//			if (StringUtils.hasText(finalSortField) && finalSortField.contains(".")) {
+//				String[] parts = finalSortField.split("\\.");
+//
+//				Path<?> sortPath = root.get(parts[0]).get(parts[1]);
+//
+//				query.orderBy("desc".equalsIgnoreCase(finalSortDir) ? cb.desc(sortPath) : cb.asc(sortPath));
+//			}
+//
+//			return predicates.isEmpty() ? cb.conjunction() : cb.or(predicates.toArray(new Predicate[0]));
+//		};
+//
+//		return vendorRepository.findAll(spec, pageable);
+//	}
+	
+// Bhargav - 20/02/26
 
 	// ---------------- GET VENDOR BY ID ----------------
 	@Override
@@ -446,4 +451,67 @@ public class VendorServiceImpl implements VendorService {
 		return Month.of(month).getDisplayName(TextStyle.SHORT, Locale.ENGLISH); // Jan, Feb, Mar
 	}
 
+	
+//Bhargav Addedby 20/02/26
+
+	@Override
+	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search, Long adminId) {
+
+	    // 🔹 Resolve embedded field names for sorting
+	    String resolvedSortField = sortField;
+	    if ("city".equalsIgnoreCase(sortField)) {
+	        resolvedSortField = "vendorAddress.city";
+	    }if ("country".equalsIgnoreCase(sortField)) {
+	        resolvedSortField = "vendorAddress.country"; 
+	    } else if ("state".equalsIgnoreCase(sortField)) {
+	        resolvedSortField = "vendorAddress.state";
+	    }
+	    final String finalSortField = resolvedSortField;
+	    final String finalSortDir = sortDir;
+
+	    // 🔹 Pageable sorting (ONLY for root fields)
+	    Sort sort = Sort.unsorted();
+	    if (StringUtils.hasText(finalSortField) && !finalSortField.contains(".")) {
+	        sort = "desc".equalsIgnoreCase(finalSortDir) 
+	            ? Sort.by(finalSortField).descending() 
+	            : Sort.by(finalSortField).ascending();
+	    }
+	    Pageable pageable = PageRequest.of(page, size, sort);
+
+	    Specification<Vendor> spec = (root, query, cb) -> {
+	        List<Predicate> predicates = new ArrayList<>();
+
+	        // 🔹 Filter by adminId
+	        if (adminId != null) {
+	            predicates.add(cb.equal(root.get("adminId"), adminId));
+	        }
+
+	        // 🔹 Search across multiple fields
+	        if (StringUtils.hasText(search)) {
+	            String pattern = "%" + search.toLowerCase() + "%";
+	            Join<Vendor, VendorAddress> address = root.join("vendorAddress", JoinType.LEFT);
+	            
+	            predicates.add(cb.like(cb.lower(root.get("vendorName")), pattern));
+	            predicates.add(cb.like(cb.lower(root.get("email")), pattern));
+	            predicates.add(cb.like(cb.lower(root.get("einNumber")), pattern));
+	            predicates.add(cb.like(cb.lower(root.get("phoneNumber")), pattern));
+	            predicates.add(cb.like(cb.lower(address.get("city")), pattern));
+	            predicates.add(cb.like(cb.lower(address.get("country")), pattern));
+	            predicates.add(cb.like(cb.lower(address.get("state")), pattern));
+	        }
+
+	        // 🔹 Embedded field sorting
+	        if (StringUtils.hasText(finalSortField) && finalSortField.contains(".")) {
+	            String[] parts = finalSortField.split("\\.");
+	            Path<?> sortPath = root.get(parts[0]).get(parts[1]);
+	            query.orderBy("desc".equalsIgnoreCase(finalSortDir) ? cb.desc(sortPath) : cb.asc(sortPath));
+	        }
+
+	        return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+	    };
+
+	    return vendorRepository.findAll(spec, pageable);
+	}
+//Bhargav Addedby 20/02/26
+	
 }
