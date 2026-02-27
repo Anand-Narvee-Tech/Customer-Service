@@ -189,27 +189,57 @@ public class VendorController {
 				exists ? "Phone number already exists" : "Phone number is available", exists));
 	}
 
+//Bhargav  commentedby 20/02/26
+//	@GetMapping("/searchAndSort")
+//	public ResponseEntity<RestAPIResponse> searchAndSortVendors(
+//			@RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+//			@RequestParam(value = "page", defaultValue = "0") int page,
+//			@RequestParam(value = "size", defaultValue = "10") int size,
+//			@RequestParam(value = "sortField", defaultValue = "vendorId") String sortField,
+//			@RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
+//
+//		try {
+//			Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword);
+//
+//			return new ResponseEntity<>(new RestAPIResponse("Success",
+//					"Vendors Retrieved Successfully (Search + Sort + Pagination)", result), HttpStatus.OK);
+//
+//		} catch (Exception e) {
+//			return new ResponseEntity<>(
+//					new RestAPIResponse("Error", "Failed to search and sort vendors: " + e.getMessage()),
+//					HttpStatus.INTERNAL_SERVER_ERROR);
+//		}
+//	}
+	//Bhargav  commentedby 20/02/26
+
+//Bhargav Addedby 20/02/26
+	
 	@GetMapping("/searchAndSort")
 	public ResponseEntity<RestAPIResponse> searchAndSortVendors(
-			@RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-			@RequestParam(value = "page", defaultValue = "0") int page,
-			@RequestParam(value = "size", defaultValue = "10") int size,
-			@RequestParam(value = "sortField", defaultValue = "vendorId") String sortField,
-			@RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
+	        @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+	        @RequestParam(value = "page", defaultValue = "0") int page,
+	        @RequestParam(value = "size", defaultValue = "10") int size,
+	        @RequestParam(value = "sortField", defaultValue = "vendorId") String sortField,
+	        @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir,
+	        @RequestParam(value = "adminId", required = false) Long adminId) {
 
-		try {
-			Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword);
+	    try {
+	        Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword, adminId);
 
-			return new ResponseEntity<>(new RestAPIResponse("Success",
-					"Vendors Retrieved Successfully (Search + Sort + Pagination)", result), HttpStatus.OK);
-
-		} catch (Exception e) {
-			return new ResponseEntity<>(
-					new RestAPIResponse("Error", "Failed to search and sort vendors: " + e.getMessage()),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+	        return new ResponseEntity<>(new RestAPIResponse("Success",
+	                "Vendors Retrieved Successfully (Search + Sort + Pagination + Admin Filter)", result),
+	                HttpStatus.OK);
+	    } catch (Exception e) {
+	        return new ResponseEntity<>(
+	                new RestAPIResponse("Error", "Failed to search and sort vendors: " + e.getMessage()),
+	                HttpStatus.INTERNAL_SERVER_ERROR);
+	    }
 	}
 
+	//Bhargav Addedby 20/02/26
+	
+
+	
 	@GetMapping("/count")
 	public ResponseEntity<RestAPIResponse> getVendorCount() {
 

@@ -29,7 +29,7 @@ public interface VendorService {
 
 	public List<Vendor> searchVendorsByName(String keyword);
 
-	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search);
+	//public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search);
 
 	public Long fetchVendorCount();
 
@@ -44,4 +44,6 @@ public interface VendorService {
 	public List<String> getVendorsAddedLast24Hours();
 
 	public Map<String, Object> fetchVendorCountPerMonth(int year);
+	
+	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search, Long adminId);
 }

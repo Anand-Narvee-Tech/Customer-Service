@@ -45,11 +45,18 @@ public class Consultant {
 	@Column(nullable = false, unique = true)
 	private String email;
 
+	@Column(name = "mobile_number")
 	private String mobileNumber;
+	
+	/* private String mobileNumber; */
 	private BigDecimal billRate;
 	private String documentPath;
 	private String status;
 
+	@Column(name = "adminId")
+	private Long adminId;
+	
+	
 	@ManyToOne
 	@JoinColumn(name = "vendor_id", nullable = false)
 	private Vendor vendor;
