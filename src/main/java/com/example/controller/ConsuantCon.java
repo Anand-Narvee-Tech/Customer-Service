@@ -111,25 +111,51 @@ public class ConsuantCon {
 	// ================= GET ALL =================
 
 //Bhargav 21-02-26
+//	@PostMapping("/searchAndSort")
+//	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
+//	        @RequestParam(defaultValue = "0") int page,
+//	        @RequestParam(defaultValue = "10") int size,
+//	        @RequestParam(defaultValue = "id") String sortField,
+//	        @RequestParam(defaultValue = "asc") String sortDir,
+//	        @RequestParam(required = false) String keyword,
+//	        @RequestParam(required = false) Long adminId) {
+//
+//	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
+//	            Sort.by(sortField).descending() :
+//	            Sort.by(sortField).ascending();
+//
+//	    PageRequest pageable = PageRequest.of(page, size, sort);
+//
+//	    Page<Consultant> result =
+//	    		consultantServ.getConsultants(keyword, adminId, pageable);
+//
+//	    return ResponseEntity.ok(result);
+//	}
+	
 	@PostMapping("/searchAndSort")
 	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
-	        @RequestParam(defaultValue = "0") int page,
-	        @RequestParam(defaultValue = "10") int size,
-	        @RequestParam(defaultValue = "id") String sortField,
-	        @RequestParam(defaultValue = "asc") String sortDir,
-	        @RequestParam(required = false) String keyword,
-	        @RequestParam(required = false) Long adminId) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "10") int size,
+			@RequestParam(name = "sortField", defaultValue = "id") String sortField,
+			@RequestParam(name = "sortDir", defaultValue = "asc") String sortDir,
+			@RequestParam(name = "keyword", required = false) String keyword,
+			@RequestParam(name = "adminId", required = false) Long adminId) {
 
-	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
-	            Sort.by(sortField).descending() :
-	            Sort.by(sortField).ascending();
+		// sanitize keyword
+		if (keyword == null) {
+			keyword = "";
+		}
 
-	    PageRequest pageable = PageRequest.of(page, size, sort);
+		// validate sort direction
+		Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-	    Page<Consultant> result =
-	    		consultantServ.getConsultants(keyword, adminId, pageable);
+		Sort sort = Sort.by(direction, sortField);
 
-	    return ResponseEntity.ok(result);
+		PageRequest pageable = PageRequest.of(page, size, sort);
+
+		Page<Consultant> result = consultantServ.getConsultants(keyword, adminId, pageable);
+
+		return ResponseEntity.ok(result);
 	}
 	
 //Bhargav 21-02-26
