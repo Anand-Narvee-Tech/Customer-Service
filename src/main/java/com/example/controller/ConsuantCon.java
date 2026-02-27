@@ -32,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
 import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
 import com.example.DTO.SearchRequest;
@@ -54,26 +53,6 @@ public class ConsuantCon {
 	
 
 	// ================= CREATE =================
-//	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//	public ResponseEntity<RestAPIResponse> createConsultant(
-//	        @RequestParam("data") String dataJson,
-//	        @RequestParam(value = "file", required = false) MultipartFile file) {
-//
-//	    try {
-//	        ObjectMapper mapper = new ObjectMapper();
-//	        Consultant data = mapper.readValue(dataJson, Consultant.class);
-//	        
-//	        Consultant savedConsultant = consultantServ.save(data, file);
-//
-//	        return ResponseEntity.status(HttpStatus.SC_OK)
-//	                .body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
-//
-//	    } catch (Exception ex) {
-//	        ex.printStackTrace();
-//	        return ResponseEntity.status(HttpStatus.SC_OK)
-//	                .body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
-//	    }
-//	}
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
 																									// Consultant
@@ -98,11 +77,9 @@ public class ConsuantCon {
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> updateConsultant(@PathVariable("id") Long id,
-			@RequestPart("data") String dataJson, // ← Changed to String
-			@RequestPart(value = "file", required = false) MultipartFile file) {
+			@RequestPart("data") String dataJson, @RequestPart(value = "file", required = false) MultipartFile file) {
 
 		try {
-			// Parse JSON string to Consultant object
 			ObjectMapper objectMapper = new ObjectMapper();
 			Consultant request = objectMapper.readValue(dataJson, Consultant.class);
 
@@ -116,7 +93,7 @@ public class ConsuantCon {
 			return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
 
 		} catch (Exception ex) {
-			ex.printStackTrace(); // ← Important: see the actual error
+			ex.printStackTrace();
 			return ResponseEntity.internalServerError()
 					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
 		}
@@ -196,25 +173,19 @@ public class ConsuantCon {
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
 				.body(resource);
 	}
-	
-	
+
 	@GetMapping("/net-terms")
 	public ResponseEntity<List<Map<String, Object>>> getNetTerms() {
 
-	    List<Map<String, Object>> response =
-	            Arrays.stream(NetTerm.values())
-	                    .map(t -> {
-	                        Map<String, Object> map = new HashMap<>();
-	                        map.put("code", t.name());
-	                        map.put("label", t.getLabel());
-	                        map.put("days", t.getDays());
-	                        return map;
-	                    })
-	                    .collect(Collectors.toList());
+		List<Map<String, Object>> response = Arrays.stream(NetTerm.values()).map(t -> {
+			Map<String, Object> map = new HashMap<>();
+			map.put("code", t.name());
+			map.put("label", t.getLabel());
+			map.put("days", t.getDays());
+			return map;
+		}).collect(Collectors.toList());
 
-	    return ResponseEntity.ok(response);
+		return ResponseEntity.ok(response);
 	}
-
-
 
 }
