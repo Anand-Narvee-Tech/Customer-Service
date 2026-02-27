@@ -32,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
 import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
 import com.example.DTO.SearchRequest;
@@ -54,26 +53,6 @@ public class ConsuantCon {
 	
 
 	// ================= CREATE =================
-//	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//	public ResponseEntity<RestAPIResponse> createConsultant(
-//	        @RequestParam("data") String dataJson,
-//	        @RequestParam(value = "file", required = false) MultipartFile file) {
-//
-//	    try {
-//	        ObjectMapper mapper = new ObjectMapper();
-//	        Consultant data = mapper.readValue(dataJson, Consultant.class);
-//	        
-//	        Consultant savedConsultant = consultantServ.save(data, file);
-//
-//	        return ResponseEntity.status(HttpStatus.SC_OK)
-//	                .body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
-//
-//	    } catch (Exception ex) {
-//	        ex.printStackTrace();
-//	        return ResponseEntity.status(HttpStatus.SC_OK)
-//	                .body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
-//	    }
-//	}
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
 																									// Consultant
@@ -98,11 +77,9 @@ public class ConsuantCon {
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> updateConsultant(@PathVariable("id") Long id,
-			@RequestPart("data") String dataJson, // ← Changed to String
-			@RequestPart(value = "file", required = false) MultipartFile file) {
+			@RequestPart("data") String dataJson, @RequestPart(value = "file", required = false) MultipartFile file) {
 
 		try {
-			// Parse JSON string to Consultant object
 			ObjectMapper objectMapper = new ObjectMapper();
 			Consultant request = objectMapper.readValue(dataJson, Consultant.class);
 
@@ -116,7 +93,7 @@ public class ConsuantCon {
 			return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
 
 		} catch (Exception ex) {
-			ex.printStackTrace(); // ← Important: see the actual error
+			ex.printStackTrace();
 			return ResponseEntity.internalServerError()
 					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
 		}
@@ -134,25 +111,51 @@ public class ConsuantCon {
 	// ================= GET ALL =================
 
 //Bhargav 21-02-26
+//	@PostMapping("/searchAndSort")
+//	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
+//	        @RequestParam(defaultValue = "0") int page,
+//	        @RequestParam(defaultValue = "10") int size,
+//	        @RequestParam(defaultValue = "id") String sortField,
+//	        @RequestParam(defaultValue = "asc") String sortDir,
+//	        @RequestParam(required = false) String keyword,
+//	        @RequestParam(required = false) Long adminId) {
+//
+//	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
+//	            Sort.by(sortField).descending() :
+//	            Sort.by(sortField).ascending();
+//
+//	    PageRequest pageable = PageRequest.of(page, size, sort);
+//
+//	    Page<Consultant> result =
+//	    		consultantServ.getConsultants(keyword, adminId, pageable);
+//
+//	    return ResponseEntity.ok(result);
+//	}
+	
 	@PostMapping("/searchAndSort")
 	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
-	        @RequestParam(defaultValue = "0") int page,
-	        @RequestParam(defaultValue = "10") int size,
-	        @RequestParam(defaultValue = "id") String sortField,
-	        @RequestParam(defaultValue = "asc") String sortDir,
-	        @RequestParam(required = false) String keyword,
-	        @RequestParam(required = false) Long adminId) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "10") int size,
+			@RequestParam(name = "sortField", defaultValue = "id") String sortField,
+			@RequestParam(name = "sortDir", defaultValue = "asc") String sortDir,
+			@RequestParam(name = "keyword", required = false) String keyword,
+			@RequestParam(name = "adminId", required = false) Long adminId) {
 
-	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
-	            Sort.by(sortField).descending() :
-	            Sort.by(sortField).ascending();
+		// sanitize keyword
+		if (keyword == null) {
+			keyword = "";
+		}
 
-	    PageRequest pageable = PageRequest.of(page, size, sort);
+		// validate sort direction
+		Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-	    Page<Consultant> result =
-	    		consultantServ.getConsultants(keyword, adminId, pageable);
+		Sort sort = Sort.by(direction, sortField);
 
-	    return ResponseEntity.ok(result);
+		PageRequest pageable = PageRequest.of(page, size, sort);
+
+		Page<Consultant> result = consultantServ.getConsultants(keyword, adminId, pageable);
+
+		return ResponseEntity.ok(result);
 	}
 	
 //Bhargav 21-02-26
@@ -196,25 +199,19 @@ public class ConsuantCon {
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
 				.body(resource);
 	}
-	
-	
+
 	@GetMapping("/net-terms")
 	public ResponseEntity<List<Map<String, Object>>> getNetTerms() {
 
-	    List<Map<String, Object>> response =
-	            Arrays.stream(NetTerm.values())
-	                    .map(t -> {
-	                        Map<String, Object> map = new HashMap<>();
-	                        map.put("code", t.name());
-	                        map.put("label", t.getLabel());
-	                        map.put("days", t.getDays());
-	                        return map;
-	                    })
-	                    .collect(Collectors.toList());
+		List<Map<String, Object>> response = Arrays.stream(NetTerm.values()).map(t -> {
+			Map<String, Object> map = new HashMap<>();
+			map.put("code", t.name());
+			map.put("label", t.getLabel());
+			map.put("days", t.getDays());
+			return map;
+		}).collect(Collectors.toList());
 
-	    return ResponseEntity.ok(response);
+		return ResponseEntity.ok(response);
 	}
-
-
 
 }
