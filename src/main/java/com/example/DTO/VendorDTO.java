@@ -8,13 +8,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VendorDTO {
-	
+
 	private Long vendorId;
-    private String vendorName;
-    private String email;
-    private String phoneNumber;
-    private String msaAgreement;
-    private String address;
-    private String website;
-    private VendorAddressDTO vendorAddress;
+	private String vendorName;
+	private String email;
+	private String phoneNumber;
+	private String msaAgreement;
+	private String address;
+	private String website;
+	private VendorAddressDTO vendorAddress;
+	private String attentionTo;
+	private String additionDoc;
 }

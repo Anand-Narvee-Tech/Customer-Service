@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
 import org.springframework.core.io.Resource;
@@ -46,11 +47,9 @@ public class ConsuantCon {
 
 	@Autowired
 	private ConsulanatService consultantServ;
-	
-	
+
 	@Autowired
 	private ConsultantRepository consultantRepository;
-	
 
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -131,7 +130,7 @@ public class ConsuantCon {
 //
 //	    return ResponseEntity.ok(result);
 //	}
-	
+
 	@PostMapping("/searchAndSort")
 	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
 			@RequestParam(name = "page", defaultValue = "0") int page,
@@ -157,9 +156,9 @@ public class ConsuantCon {
 
 		return ResponseEntity.ok(result);
 	}
-	
+
 //Bhargav 21-02-26
-	
+
 	// ================= DEACTIVATE =================
 	@DeleteMapping("/{id}")
 	public ResponseEntity<RestAPIResponse> deactivateConsultant(@PathVariable("id") Long id) {
@@ -214,4 +213,12 @@ public class ConsuantCon {
 		return ResponseEntity.ok(response);
 	}
 
+	@DeleteMapping("/delete/{id}")
+	public ResponseEntity<RestAPIResponse> deleteConsultant(@PathVariable("id") Long id) {
+
+		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
+
+		return ResponseEntity
+				.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.get()));
+	}
 }

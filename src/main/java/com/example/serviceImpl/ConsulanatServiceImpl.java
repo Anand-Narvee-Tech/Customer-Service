@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,108 +112,100 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 //
 //		return consultantRepository.searchConsultants(request.getKeyword(), pageable);
 //	}
-	
-	//Bhargav 21-02-26	
-		@Override
-		public Page<Consultant> getConsultants(String keyword,
-		                                       Long adminId,
-		                                       PageRequest pageable) {
 
-		    // If both keyword and adminId present
-		    if (keyword != null && !keyword.isBlank() && adminId != null) {
-		        return consultantRepository
-		                .findByAdminIdAndKeyword(adminId, keyword, pageable);
-		    }
+	// Bhargav 21-02-26
+	@Override
+	public Page<Consultant> getConsultants(String keyword, Long adminId, PageRequest pageable) {
 
-		    // If only adminId present
-		    if (adminId != null) {
-		        return consultantRepository.findByAdminId(adminId, pageable);
-		    }
+		// If both keyword and adminId present
+		if (keyword != null && !keyword.isBlank() && adminId != null) {
+			return consultantRepository.findByAdminIdAndKeyword(adminId, keyword, pageable);
+		}
 
-		    // If only keyword present
-		    if (keyword != null && !keyword.isBlank()) {
-		        return consultantRepository.searchByKeyword(keyword, pageable);
-		    }
+		// If only adminId present
+		if (adminId != null) {
+			return consultantRepository.findByAdminId(adminId, pageable);
+		}
 
-		    // If nothing present
-		    return consultantRepository.findAll(pageable);
-		}	
-	
-	//Bhargav 21-02-26	
-	
+		// If only keyword present
+		if (keyword != null && !keyword.isBlank()) {
+			return consultantRepository.searchByKeyword(keyword, pageable);
+		}
+
+		// If nothing present
+		return consultantRepository.findAll(pageable);
+	}
+
+	// Bhargav 21-02-26
+
 	@Override
 	public Consultant update(Long id, Consultant req, MultipartFile file) {
 
-	    // ================= Fetch existing =================
-	    Consultant existing = consultantRepository.findById(id)
-	            .orElseThrow(() ->
-	                    new IllegalArgumentException("Consultant not found with id: " + id)
-	            );
+		// ================= Fetch existing =================
+		Consultant existing = consultantRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Consultant not found with id: " + id));
 
-	    // ================= Email uniqueness =================
-	    if (req.getEmail() != null
-	            && !req.getEmail().equalsIgnoreCase(existing.getEmail())
-	            && consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+		// ================= Email uniqueness =================
+		if (req.getEmail() != null && !req.getEmail().equalsIgnoreCase(existing.getEmail())
+				&& consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
 
-	        throw new IllegalArgumentException("Consultant already exists with this email");
-	    }
+			throw new IllegalArgumentException("Consultant already exists with this email");
+		}
 
 		// ================= Update fields =================
 		if (req.getFirstName() != null)
-		    existing.setFirstName(req.getFirstName());
+			existing.setFirstName(req.getFirstName());
 
 		if (req.getLastName() != null)
-		    existing.setLastName(req.getLastName());
+			existing.setLastName(req.getLastName());
 
 		if (req.getEmail() != null)
-		    existing.setEmail(req.getEmail());
+			existing.setEmail(req.getEmail());
 
 		if (req.getMobileNumber() != null)
-		    existing.setMobileNumber(req.getMobileNumber());
+			existing.setMobileNumber(req.getMobileNumber());
 
 		if (req.getBillRate() != null)
-		    existing.setBillRate(req.getBillRate());
+			existing.setBillRate(req.getBillRate());
 
 		if (req.getStatus() != null)
-		    existing.setStatus(req.getStatus());
+			existing.setStatus(req.getStatus());
 
 		if (req.getNetTerm() != null)
-		    existing.setNetTerm(req.getNetTerm());
+			existing.setNetTerm(req.getNetTerm());
 
 		if (req.getClient() != null)
-		    existing.setClient(req.getClient());
+			existing.setClient(req.getClient());
 
-	    // ================= Net Term =================
-	    if (req.getNetTerm() != null)
-	        existing.setNetTerm(req.getNetTerm());
+		// ================= Net Term =================
+		if (req.getNetTerm() != null)
+			existing.setNetTerm(req.getNetTerm());
 
-	    // ================= Client =================
-	    if (req.getClient() != null)
-	        existing.setClient(req.getClient());
+		// ================= Client =================
+		if (req.getClient() != null)
+			existing.setClient(req.getClient());
 
-	    // ================= Vendor =================
-	    if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
+		// ================= Vendor =================
+		if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
 
-	        Long vendorId = req.getVendor().getVendorId();
+			Long vendorId = req.getVendor().getVendorId();
 
-	        Vendor vendor = vendorRepository.findById(vendorId)
-	                .orElseThrow(() ->
-	                        new IllegalArgumentException("Vendor not found with id: " + vendorId)
-	                );
+			Vendor vendor = vendorRepository.findById(vendorId)
+					.orElseThrow(() -> new IllegalArgumentException("Vendor not found with id: " + vendorId));
 
-	        existing.setVendor(vendor);
-	    }
+			existing.setVendor(vendor);
+		}
 
-	    // ================= File =================
-	    if (file != null && !file.isEmpty()) {
-	        existing.setDocumentPath(storeFile1(file));
-	    }
+		// ================= File =================
+		if (file != null && !file.isEmpty()) {
+			existing.setDocumentPath(storeFile1(file));
+		}
 
-	    // ================= Audit =================
-	    existing.setUpdatedBy(getLoggedInUserId());
-	    // updatedAt handled by @PreUpdate
+		// ================= Audit =================
+		existing.setUpdatedBy(getLoggedInUserId());
+		// updatedAt handled by @PreUpdate
 
-	    return consultantRepository.save(existing);
+		return consultantRepository.save(existing);
 	}
 
 	private String storeFile1(MultipartFile file) {
@@ -258,6 +251,33 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		return consultantRepository.findByVendor_VendorId(vendorId);
 	}
 
-	
-	
+	@Override
+	public Optional<Consultant> deleteById(Long id) {
+
+		// 1️⃣ Find consultant
+		Optional<Consultant> consultantOpt = consultantRepository.findById(id);
+
+		if (consultantOpt.isEmpty()) {
+			throw new RuntimeException("Consultant not found with id: " + id);
+		}
+
+		Consultant consultant = consultantOpt.get();
+
+		// 2️⃣ Delete document file (very important — you store documentPath)
+		if (consultant.getDocumentPath() != null) {
+			try {
+				java.nio.file.Path path = java.nio.file.Paths.get(consultant.getDocumentPath());
+				java.nio.file.Files.deleteIfExists(path);
+			} catch (Exception e) {
+				System.out.println("File delete failed: " + e.getMessage());
+			}
+		}
+
+		// 3️⃣ Delete from DB
+		consultantRepository.delete(consultant);
+
+		// 4️⃣ return deleted consultant
+		return Optional.of(consultant);
+	}
+
 }
