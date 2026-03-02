@@ -199,6 +199,31 @@ public class ConsuantCon {
 				.body(resource);
 	}
 
+	@GetMapping("/uploads/vendor-additional-docs/{fileName:.+}")
+	public ResponseEntity<Resource> getVendorAdditionalDoc(@PathVariable("fileName") String fileName)
+			throws IOException {
+
+		String BASE_PATH = "uploads/vendor-additional-docs";
+
+		Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
+		Path filePath = basePath.resolve(fileName).normalize();
+
+		// 🔐 Security check
+		if (!filePath.startsWith(basePath)) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		Resource resource = new UrlResource(filePath.toUri());
+
+		if (!resource.exists() || !resource.isReadable()) {
+			return ResponseEntity.notFound().build();
+		}
+
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
+				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+				.body(resource);
+	}
+
 	@GetMapping("/net-terms")
 	public ResponseEntity<List<Map<String, Object>>> getNetTerms() {
 
