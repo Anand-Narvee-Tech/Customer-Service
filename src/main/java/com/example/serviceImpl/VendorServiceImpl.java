@@ -33,7 +33,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Path;
+//import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import java.nio.file.Path;
 
 @Service
 public class VendorServiceImpl implements VendorService {
@@ -59,75 +60,111 @@ public class VendorServiceImpl implements VendorService {
 	private InvoiceFeignClient invoiceFeignClient;
 
 	// ---------------- CREATE VENDOR ----------------
-	 @Override
-	    public Vendor createVendor(Vendor vendor, MultipartFile msaFile) {
+	@Override
+	public Vendor createVendor(Vendor vendor, MultipartFile msaFile, MultipartFile additionDocFile) {
 
-	        List<String> duplicateFields = new ArrayList<>();
+		List<String> duplicateFields = new ArrayList<>();
 
-	        if (vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName()))
-	            duplicateFields.add("vendorName");
+		if (vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName()))
+			duplicateFields.add("vendorName");
 
-	        if (vendorRepository.existsByEmailIgnoreCase(vendor.getEmail()))
-	            duplicateFields.add("email");
+		if (vendorRepository.existsByEmailIgnoreCase(vendor.getEmail()))
+			duplicateFields.add("email");
 
-	        if (vendorRepository.existsByEinNumber(vendor.getEinNumber()))
-	            duplicateFields.add("einNumber");
+		if (vendorRepository.existsByEinNumber(vendor.getEinNumber()))
+			duplicateFields.add("einNumber");
 
-	        if (vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber()))
-	            duplicateFields.add("phoneNumber");
+		if (vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber()))
+			duplicateFields.add("phoneNumber");
 
-	        if (!duplicateFields.isEmpty()) {
-	            throw new DuplicateVendorException(
-	                    "Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
-	        }
+		if (!duplicateFields.isEmpty()) {
+			throw new DuplicateVendorException(
+					"Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
+		}
 
-	        if (msaFile != null && !msaFile.isEmpty()) {
-	            vendor.setMsaAgreement(storeMsaFile(msaFile));
-	        }
+		// ✅ Upload MSA
+		if (msaFile != null && !msaFile.isEmpty()) {
+			vendor.setMsaAgreement(storeFile(msaFile, "vendor-msa"));
+		}
 
-	        return vendorRepository.save(vendor);
-	    }
+		// ✅ Upload Additional Document
+		if (additionDocFile != null && !additionDocFile.isEmpty()) {
+			vendor.setAdditionDoc(storeFile(additionDocFile, "vendor-additional-docs"));
+		}
 
-	    // ================= FILE UPLOAD =================
-	    private String storeMsaFile(MultipartFile file) {
+		return vendorRepository.save(vendor);
+	}
 
-	        try {
-	            String contentType = file.getContentType();
+	// ================= FILE UPLOAD =================
+//	private String storeMsaFile(MultipartFile file) {
+//
+//		try {
+//			String contentType = file.getContentType();
+//
+//			if (contentType == null || !(contentType.equals("application/pdf")
+//					|| contentType.equals("application/vnd.ms-excel")
+//					|| contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))) {
+//
+//				throw new IllegalArgumentException("Only PDF or Excel files allowed");
+//			}
+//
+//			// ✅ Fully qualified Path (NO conflict)
+//			java.nio.file.Path uploadDir = Paths.get("uploads", "vendor-msa");
+//
+//			Files.createDirectories(uploadDir);
+//
+//			String originalFilename = file.getOriginalFilename();
+//			String extension = "";
+//
+//			if (originalFilename != null && originalFilename.contains(".")) {
+//				extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+//			}
+//
+//			String fileName = UUID.randomUUID() + extension;
+//			java.nio.file.Path filePath = uploadDir.resolve(fileName);
+//
+//			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+//
+//			return filePath.toString();
+//
+//		} catch (IOException e) {
+//			throw new RuntimeException("MSA file upload failed", e);
+//		}
+//	}
 
-	            if (contentType == null ||
-	                    !(contentType.equals("application/pdf")
-	                            || contentType.equals("application/vnd.ms-excel")
-	                            || contentType.equals(
-	                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))) {
+	private String storeFile(MultipartFile file, String folderName) {
 
-	                throw new IllegalArgumentException("Only PDF or Excel files allowed");
-	            }
+		try {
+			String contentType = file.getContentType();
 
-	            // ✅ Fully qualified Path (NO conflict)
-	            java.nio.file.Path uploadDir =
-	                    Paths.get("uploads", "vendor-msa");
+			if (contentType == null || !(contentType.equals("application/pdf")
+					|| contentType.equals("application/vnd.ms-excel")
+					|| contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))) {
 
-	            Files.createDirectories(uploadDir);
+				throw new IllegalArgumentException("Only PDF or Excel files allowed");
+			}
 
-	            String originalFilename = file.getOriginalFilename();
-	            String extension = "";
+			Path uploadDir = Paths.get("uploads", folderName);
+			Files.createDirectories(uploadDir);
 
-	            if (originalFilename != null && originalFilename.contains(".")) {
-	                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-	            }
+			String originalFilename = file.getOriginalFilename();
+			String extension = "";
 
-	            String fileName = UUID.randomUUID() + extension;
-	            java.nio.file.Path filePath = uploadDir.resolve(fileName);
+			if (originalFilename != null && originalFilename.contains(".")) {
+				extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+			}
 
-	            Files.copy(file.getInputStream(), filePath,
-	                    StandardCopyOption.REPLACE_EXISTING);
+			String fileName = UUID.randomUUID() + extension;
+			Path filePath = uploadDir.resolve(fileName);
 
-	            return filePath.toString();
+			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-	        } catch (IOException e) {
-	            throw new RuntimeException("MSA file upload failed", e);
-	        }
-	    }
+			return filePath.toString();
+
+		} catch (IOException e) {
+			throw new RuntimeException("File upload failed", e);
+		}
+	}
 
 	// ---------------- DUPLICATES CHECKING ----------------
 	@Override
@@ -182,78 +219,106 @@ public class VendorServiceImpl implements VendorService {
 
 	// ---------------- UPDATE VENDOR ----------------
 	@Override
-	public Vendor updateVendor(Long vendorId, Vendor vendor, MultipartFile msaFile) {
+	public Vendor updateVendor(Long vendorId, Vendor vendor, MultipartFile msaFile, MultipartFile additionDoc) {
 
-	    Vendor existingVendor = vendorRepository.findById(vendorId)
-	            .orElseThrow(() -> new RuntimeException("Vendor not found with id " + vendorId));
+		Vendor existingVendor = vendorRepository.findById(vendorId)
+				.orElseThrow(() -> new RuntimeException("Vendor not found with id " + vendorId));
 
-	    List<String> duplicateFields = new ArrayList<>();
+		List<String> duplicateFields = new ArrayList<>();
 
-	    // 🔁 Duplicate checks (exclude current vendor)
-	    if (!existingVendor.getVendorName().equalsIgnoreCase(vendor.getVendorName())
-	            && vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName())) {
-	        duplicateFields.add("vendorName");
-	    }
+		// Duplicate checks (exclude current vendor)
+		if (!existingVendor.getVendorName().equalsIgnoreCase(vendor.getVendorName())
+				&& vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName())) {
+			duplicateFields.add("vendorName");
+		}
 
-	    if (!existingVendor.getEmail().equalsIgnoreCase(vendor.getEmail())
-	            && vendorRepository.existsByEmailIgnoreCase(vendor.getEmail())) {
-	        duplicateFields.add("email");
-	    }
+		if (!existingVendor.getEmail().equalsIgnoreCase(vendor.getEmail())
+				&& vendorRepository.existsByEmailIgnoreCase(vendor.getEmail())) {
+			duplicateFields.add("email");
+		}
 
-	    if (!existingVendor.getEinNumber().equals(vendor.getEinNumber())
-	            && vendorRepository.existsByEinNumber(vendor.getEinNumber())) {
-	        duplicateFields.add("einNumber");
-	    }
+		if (!existingVendor.getEinNumber().equals(vendor.getEinNumber())
+				&& vendorRepository.existsByEinNumber(vendor.getEinNumber())) {
+			duplicateFields.add("einNumber");
+		}
 
-	    if (!existingVendor.getPhoneNumber().equals(vendor.getPhoneNumber())
-	            && vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber())) {
-	        duplicateFields.add("phoneNumber");
-	    }
+		if (!existingVendor.getPhoneNumber().equals(vendor.getPhoneNumber())
+				&& vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber())) {
+			duplicateFields.add("phoneNumber");
+		}
 
-	    if (!duplicateFields.isEmpty()) {
-	        throw new DuplicateVendorException(
-	                "Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
-	    }
+		if (!duplicateFields.isEmpty()) {
+			throw new DuplicateVendorException(
+					"Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
+		}
 
-	    // 🔄 Update fields
-	    existingVendor.setVendorName(vendor.getVendorName());
-	    existingVendor.setEmail(vendor.getEmail());
-	    existingVendor.setPhoneNumber(vendor.getPhoneNumber());
-	    existingVendor.setEinNumber(vendor.getEinNumber());
+		// Basic fields
+		existingVendor.setVendorName(vendor.getVendorName());
+		existingVendor.setEmail(vendor.getEmail());
+		existingVendor.setPhoneNumber(vendor.getPhoneNumber());
+		existingVendor.setEinNumber(vendor.getEinNumber());
+		existingVendor.setWebsite(vendor.getWebsite());
+		existingVendor.setAddress(vendor.getAddress());
+		existingVendor.setGstin(vendor.getGstin());
+		existingVendor.setAttentionTo(vendor.getAttentionTo());
+		existingVendor.setAdminId(vendor.getAdminId());
 
-	    if (vendor.getVendorAddress() != null) {
-	        existingVendor.setVendorAddress(vendor.getVendorAddress());
-	    }
+		if (vendor.getVendorAddress() != null) {
+			existingVendor.setVendorAddress(vendor.getVendorAddress());
+		}
 
-	    // 📎 MSA File upload (optional)
-	    if (msaFile != null && !msaFile.isEmpty()) {
-	        existingVendor.setMsaAgreement(storeMsaFile(msaFile));
-	    }
+		// ---------- MSA FILE ----------
+		if (msaFile != null && !msaFile.isEmpty()) {
 
-	    Vendor updatedVendor = vendorRepository.save(existingVendor);
+			// delete old msa
+			deleteOldFile(existingVendor.getMsaAgreement());
 
-	    // 📤 Notify invoice-service
-	    VendorDTO dto = new VendorDTO();
-	    dto.setVendorId(updatedVendor.getVendorId());
-	    dto.setVendorName(updatedVendor.getVendorName());
-	    dto.setEmail(updatedVendor.getEmail());
-	    dto.setPhoneNumber(updatedVendor.getPhoneNumber());
+			// upload new msa
+			String msaPath = storeFile(msaFile, "vendor-msa");
+			existingVendor.setMsaAgreement(msaPath);
+		}
 
-	    if (updatedVendor.getVendorAddress() != null) {
-	        dto.setVendorAddress(new VendorAddressDTO(
-	                updatedVendor.getVendorAddress().getStreet(),
-	                updatedVendor.getVendorAddress().getSuite(),
-	                updatedVendor.getVendorAddress().getCity(),
-	                updatedVendor.getVendorAddress().getState(),
-	                updatedVendor.getVendorAddress().getZipCode()
-	        ));
-	    }
+		// ---------- ADDITION DOC FILE ----------
+		if (additionDoc != null && !additionDoc.isEmpty()) {
 
-	    invoiceUpdateFeignClient.updateInvoicesByVendor(dto);
+			// delete old file
+			deleteOldFile(existingVendor.getAdditionDoc());
 
-	    return updatedVendor;
+			// upload new file
+			String addDocPath = storeFile(additionDoc, "vendor-additional-docs");
+			existingVendor.setAdditionDoc(addDocPath);
+		}
+
+		Vendor updatedVendor = vendorRepository.save(existingVendor);
+
+		// Notify invoice service
+		VendorDTO dto = new VendorDTO();
+		dto.setVendorId(updatedVendor.getVendorId());
+		dto.setVendorName(updatedVendor.getVendorName());
+		dto.setEmail(updatedVendor.getEmail());
+		dto.setPhoneNumber(updatedVendor.getPhoneNumber());
+
+		if (updatedVendor.getVendorAddress() != null) {
+			dto.setVendorAddress(new VendorAddressDTO(updatedVendor.getVendorAddress().getStreet(),
+					updatedVendor.getVendorAddress().getSuite(), updatedVendor.getVendorAddress().getCity(),
+					updatedVendor.getVendorAddress().getState(), updatedVendor.getVendorAddress().getZipCode()));
+		}
+
+		invoiceUpdateFeignClient.updateInvoicesByVendor(dto);
+
+		return updatedVendor;
 	}
 
+	private void deleteOldFile(String filePath) {
+		try {
+			if (filePath != null) {
+				Path path = Paths.get(filePath);
+				Files.deleteIfExists(path);
+			}
+		} catch (IOException e) {
+			System.out.println("Old file delete failed: " + e.getMessage());
+		}
+	}
 
 	// ---------------- DELETE VENDOR ----------------
 	@Override
@@ -268,9 +333,9 @@ public class VendorServiceImpl implements VendorService {
 
 	// ---------------- GET VENDORS WITH PAGINATION, SORTING & SEARCH
 	// ----------------
-	
+
 // Bhargav - 20/02/26
-	
+
 //	@Override
 //	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search) {
 //
@@ -329,7 +394,7 @@ public class VendorServiceImpl implements VendorService {
 //
 //		return vendorRepository.findAll(spec, pageable);
 //	}
-	
+
 // Bhargav - 20/02/26
 
 	// ---------------- GET VENDOR BY ID ----------------
@@ -451,67 +516,86 @@ public class VendorServiceImpl implements VendorService {
 		return Month.of(month).getDisplayName(TextStyle.SHORT, Locale.ENGLISH); // Jan, Feb, Mar
 	}
 
-	
 //Bhargav Addedby 20/02/26
 
 	@Override
 	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search, Long adminId) {
 
-	    // 🔹 Resolve embedded field names for sorting
-	    String resolvedSortField = sortField;
-	    if ("city".equalsIgnoreCase(sortField)) {
-	        resolvedSortField = "vendorAddress.city";
-	    }if ("country".equalsIgnoreCase(sortField)) {
-	        resolvedSortField = "vendorAddress.country"; 
-	    } else if ("state".equalsIgnoreCase(sortField)) {
-	        resolvedSortField = "vendorAddress.state";
-	    }
-	    final String finalSortField = resolvedSortField;
-	    final String finalSortDir = sortDir;
+		// ---------- SORT FIELD RESOLUTION ----------
+		String resolvedSortField = sortField;
 
-	    // 🔹 Pageable sorting (ONLY for root fields)
-	    Sort sort = Sort.unsorted();
-	    if (StringUtils.hasText(finalSortField) && !finalSortField.contains(".")) {
-	        sort = "desc".equalsIgnoreCase(finalSortDir) 
-	            ? Sort.by(finalSortField).descending() 
-	            : Sort.by(finalSortField).ascending();
-	    }
-	    Pageable pageable = PageRequest.of(page, size, sort);
+		if ("city".equalsIgnoreCase(sortField)) {
+			resolvedSortField = "vendorAddress.city";
+		} else if ("country".equalsIgnoreCase(sortField)) {
+			resolvedSortField = "vendorAddress.country";
+		} else if ("state".equalsIgnoreCase(sortField)) {
+			resolvedSortField = "vendorAddress.state";
+		}
 
-	    Specification<Vendor> spec = (root, query, cb) -> {
-	        List<Predicate> predicates = new ArrayList<>();
+		final String finalSortField = resolvedSortField;
+		final String finalSortDir = sortDir;
 
-	        // 🔹 Filter by adminId
-	        if (adminId != null) {
-	            predicates.add(cb.equal(root.get("adminId"), adminId));
-	        }
+		// ---------- PAGEABLE ----------
+		Sort sort = Sort.unsorted();
+		if (StringUtils.hasText(finalSortField) && !finalSortField.contains(".")) {
+			sort = "desc".equalsIgnoreCase(finalSortDir) ? Sort.by(finalSortField).descending()
+					: Sort.by(finalSortField).ascending();
+		}
 
-	        // 🔹 Search across multiple fields
-	        if (StringUtils.hasText(search)) {
-	            String pattern = "%" + search.toLowerCase() + "%";
-	            Join<Vendor, VendorAddress> address = root.join("vendorAddress", JoinType.LEFT);
-	            
-	            predicates.add(cb.like(cb.lower(root.get("vendorName")), pattern));
-	            predicates.add(cb.like(cb.lower(root.get("email")), pattern));
-	            predicates.add(cb.like(cb.lower(root.get("einNumber")), pattern));
-	            predicates.add(cb.like(cb.lower(root.get("phoneNumber")), pattern));
-	            predicates.add(cb.like(cb.lower(address.get("city")), pattern));
-	            predicates.add(cb.like(cb.lower(address.get("country")), pattern));
-	            predicates.add(cb.like(cb.lower(address.get("state")), pattern));
-	        }
+		Pageable pageable = PageRequest.of(page, size, sort);
 
-	        // 🔹 Embedded field sorting
-	        if (StringUtils.hasText(finalSortField) && finalSortField.contains(".")) {
-	            String[] parts = finalSortField.split("\\.");
-	            Path<?> sortPath = root.get(parts[0]).get(parts[1]);
-	            query.orderBy("desc".equalsIgnoreCase(finalSortDir) ? cb.desc(sortPath) : cb.asc(sortPath));
-	        }
+		// ---------- SPECIFICATION ----------
+		Specification<Vendor> spec = (root, query, cb) -> {
 
-	        return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
-	    };
+			List<Predicate> mainPredicates = new ArrayList<>();
 
-	    return vendorRepository.findAll(spec, pageable);
+			// ===== Admin filter =====
+			if (adminId != null) {
+				mainPredicates.add(cb.equal(root.get("adminId"), adminId));
+			}
+
+			// ===== SEARCH (IMPORTANT FIX: OR CONDITIONS) =====
+			if (StringUtils.hasText(search)) {
+
+				String pattern = "%" + search.toLowerCase().trim() + "%";
+
+				Join<Vendor, VendorAddress> address = root.join("vendorAddress", JoinType.LEFT);
+
+				List<Predicate> searchPredicates = new ArrayList<>();
+
+				// Root fields
+				searchPredicates.add(cb.like(cb.lower(root.get("vendorName")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("email")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("einNumber")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("phoneNumber")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("gstin")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("website")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("address")), pattern));
+				searchPredicates.add(cb.like(cb.lower(root.get("attentionTo")), pattern));
+
+				// Embedded address
+				searchPredicates.add(cb.like(cb.lower(address.get("city")), pattern));
+				searchPredicates.add(cb.like(cb.lower(address.get("state")), pattern));
+				searchPredicates.add(cb.like(cb.lower(address.get("country")), pattern));
+
+				// Combine OR search
+				mainPredicates.add(cb.or(searchPredicates.toArray(new Predicate[0])));
+			}
+
+			// ===== Embedded Sorting =====
+			if (StringUtils.hasText(finalSortField) && finalSortField.contains(".")) {
+
+				String[] parts = finalSortField.split("\\.");
+				jakarta.persistence.criteria.Path<?> sortPath = root.get(parts[0]).get(parts[1]);
+
+				query.orderBy("desc".equalsIgnoreCase(finalSortDir) ? cb.desc(sortPath) : cb.asc(sortPath));
+			}
+
+			return mainPredicates.isEmpty() ? cb.conjunction() : cb.and(mainPredicates.toArray(new Predicate[0]));
+		};
+
+		return vendorRepository.findAll(spec, pageable);
 	}
 //Bhargav Addedby 20/02/26
-	
+
 }

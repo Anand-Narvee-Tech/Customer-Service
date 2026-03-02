@@ -45,13 +45,15 @@ public class VendorController {
 
 	@PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> saveVendor(@RequestPart("data") String vendorJson,
-			@RequestPart(value = "msaFile", required = false) MultipartFile msaFile) {
+			@RequestPart(value = "msaFile", required = false) MultipartFile msaFile,
+			@RequestPart(value = "additionDoc", required = false) MultipartFile additionDoc) {
 
 		try {
-			// Convert JSON string → Vendor
+			// JSON → Vendor object
 			Vendor vendor = objectMapper.readValue(vendorJson, Vendor.class);
 
-			Vendor savedVendor = vendorServiceImpl.createVendor(vendor, msaFile);
+			// pass both files correctly
+			Vendor savedVendor = vendorServiceImpl.createVendor(vendor, msaFile, additionDoc);
 
 			return ResponseEntity.ok(new RestAPIResponse("success", "Vendor registered successfully", savedVendor));
 
@@ -67,19 +69,27 @@ public class VendorController {
 
 	@PutMapping(value = "/{vendorId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> updateVendor(@PathVariable("vendorId") Long vendorId,
-			@RequestPart("vendor") String vendorJson,
-			@RequestPart(value = "msaFile", required = false) MultipartFile msaFile) {
+			@RequestPart("data") String vendorJson,
+			@RequestPart(value = "msaFile", required = false) MultipartFile msaFile,
+			@RequestPart(value = "additionDoc", required = false) MultipartFile additionDoc) {
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
+			// JSON → Vendor
 			Vendor vendor = objectMapper.readValue(vendorJson, Vendor.class);
 
-			Vendor updatedVendor = vendorServiceImpl.updateVendor(vendorId, vendor, msaFile);
+			// pass both files
+			Vendor updatedVendor = vendorServiceImpl.updateVendor(vendorId, vendor, msaFile, additionDoc);
 
 			return ResponseEntity.ok(new RestAPIResponse("success", "Vendor Data Updated Successfully", updatedVendor));
 
+		} catch (DuplicateVendorException ex) {
+			return ResponseEntity.badRequest()
+					.body(new RestAPIResponse("fail", "Duplicate vendor not able to add", null));
+
 		} catch (Exception e) {
-			return ResponseEntity.badRequest().body(new RestAPIResponse("error", e.getMessage()));
+			e.printStackTrace();
+			return ResponseEntity.internalServerError()
+					.body(new RestAPIResponse("error", "something went wrong", null));
 		}
 	}
 
@@ -132,7 +142,8 @@ public class VendorController {
 					vendor.getVendorAddress().getState(), vendor.getVendorAddress().getZipCode());
 
 			return new VendorDTO(vendor.getVendorId(), vendor.getVendorName(), vendor.getEmail(),
-					vendor.getPhoneNumber(), vendor.getMsaAgreement(), vendor.getAddress(), vendor.getWebsite(), addr);
+					vendor.getPhoneNumber(), vendor.getMsaAgreement(), vendor.getAddress(), vendor.getWebsite(), addr,
+					vendor.getAttentionTo(), vendor.getAdditionDoc());
 		}).collect(Collectors.toList());
 
 		return ResponseEntity.ok(response);
@@ -210,36 +221,35 @@ public class VendorController {
 //					HttpStatus.INTERNAL_SERVER_ERROR);
 //		}
 //	}
-	//Bhargav  commentedby 20/02/26
+	// Bhargav commentedby 20/02/26
 
 //Bhargav Addedby 20/02/26
-	
+
 	@GetMapping("/searchAndSort")
 	public ResponseEntity<RestAPIResponse> searchAndSortVendors(
-	        @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-	        @RequestParam(value = "page", defaultValue = "0") int page,
-	        @RequestParam(value = "size", defaultValue = "10") int size,
-	        @RequestParam(value = "sortField", defaultValue = "vendorId") String sortField,
-	        @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir,
-	        @RequestParam(value = "adminId", required = false) Long adminId) {
+			@RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "size", defaultValue = "10") int size,
+			@RequestParam(value = "sortField", defaultValue = "vendorId") String sortField,
+			@RequestParam(value = "sortDir", defaultValue = "asc") String sortDir,
+			@RequestParam(value = "adminId", required = false) Long adminId) {
 
-	    try {
-	        Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword, adminId);
+		try {
+			Page<Vendor> result = vendorServiceImpl.getVendors(page, size, sortField, sortDir, keyword, adminId);
 
-	        return new ResponseEntity<>(new RestAPIResponse("Success",
-	                "Vendors Retrieved Successfully (Search + Sort + Pagination + Admin Filter)", result),
-	                HttpStatus.OK);
-	    } catch (Exception e) {
-	        return new ResponseEntity<>(
-	                new RestAPIResponse("Error", "Failed to search and sort vendors: " + e.getMessage()),
-	                HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
+			return new ResponseEntity<>(
+					new RestAPIResponse("Success",
+							"Vendors Retrieved Successfully (Search + Sort + Pagination + Admin Filter)", result),
+					HttpStatus.OK);
+		} catch (Exception e) {
+			return new ResponseEntity<>(
+					new RestAPIResponse("Error", "Failed to search and sort vendors: " + e.getMessage()),
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
 
-	//Bhargav Addedby 20/02/26
-	
+	// Bhargav Addedby 20/02/26
 
-	
 	@GetMapping("/count")
 	public ResponseEntity<RestAPIResponse> getVendorCount() {
 

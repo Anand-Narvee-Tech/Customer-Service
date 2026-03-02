@@ -47,7 +47,7 @@ public class Consultant {
 
 	@Column(name = "mobile_number")
 	private String mobileNumber;
-	
+
 	/* private String mobileNumber; */
 	private BigDecimal billRate;
 	private String documentPath;
@@ -55,8 +55,7 @@ public class Consultant {
 
 	@Column(name = "adminId")
 	private Long adminId;
-	
-	
+
 	@ManyToOne
 	@JoinColumn(name = "vendor_id", nullable = false)
 	private Vendor vendor;
@@ -79,6 +78,9 @@ public class Consultant {
 
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	private String client;
+
+	@Column(name = "invoice_mails")
+	private String invoiceMail;
 
 	@PrePersist
 	public void prePersist() {

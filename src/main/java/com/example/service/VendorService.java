@@ -11,7 +11,7 @@ import com.example.entity.Vendor;
 
 public interface VendorService {
 
-	public Vendor createVendor(Vendor vendor, MultipartFile msaFile);
+	public Vendor createVendor(Vendor vendor, MultipartFile msaFile, MultipartFile additionDoc);
 
 	public boolean checkFieldExists(String field, String value);
 
@@ -21,7 +21,7 @@ public interface VendorService {
 
 	public List<Vendor> getAll();
 
-	public Vendor updateVendor(Long vendorId, Vendor vendor, MultipartFile msaFile);
+	public Vendor updateVendor(Long vendorId, Vendor vendor, MultipartFile msaFile, MultipartFile additionDoc);
 
 	public void deleteVendor(Long vendorId);
 
@@ -29,7 +29,8 @@ public interface VendorService {
 
 	public List<Vendor> searchVendorsByName(String keyword);
 
-	//public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search);
+	// public Page<Vendor> getVendors(int page, int size, String sortField, String
+	// sortDir, String search);
 
 	public Long fetchVendorCount();
 
@@ -44,6 +45,6 @@ public interface VendorService {
 	public List<String> getVendorsAddedLast24Hours();
 
 	public Map<String, Object> fetchVendorCountPerMonth(int year);
-	
+
 	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search, Long adminId);
 }
