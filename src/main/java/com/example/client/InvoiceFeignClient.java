@@ -10,4 +10,7 @@ public interface InvoiceFeignClient {
 	@GetMapping("/manual-invoice/invoices/count-by-vendor/{vendorId}")
 	long countInvoicesByVendor(@PathVariable("vendorId") Long vendorId);
 
+	@GetMapping("/manual-invoice/consultant/{consultantId}/exists")
+	boolean hasInvoices(@PathVariable("consultantId") Long consultantId);
+
 }
