@@ -33,9 +33,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.example.DTO.ConsultantRequestDTO;
 import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
 import com.example.DTO.SearchRequest;
+import com.example.client.InvoiceFeignClient;
 import com.example.entity.Consultant;
 import com.example.repository.ConsultantRepository;
 import com.example.service.ConsulanatService;
@@ -50,6 +53,9 @@ public class ConsuantCon {
 
 	@Autowired
 	private ConsultantRepository consultantRepository;
+
+	@Autowired
+	private InvoiceFeignClient invoiceFeignClient;
 
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -241,9 +247,28 @@ public class ConsuantCon {
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<RestAPIResponse> deleteConsultant(@PathVariable("id") Long id) {
 
+		// Call invoice service to check if invoices exist
+		boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
+
+		if (hasInvoices) {
+			throw new RuntimeException("Consultant cannot be deleted because invoices exist");
+		}
+
+		if (hasInvoices) {
+			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST).body(new RestAPIResponse("error",
+					"Cannot delete consultant. Invoices exist for this consultant.", null));
+		}
+
 		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
 
 		return ResponseEntity
-				.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.get()));
+				.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.orElse(null)));
 	}
+
+	@GetMapping("/{id}")
+	public Consultant getConsultant(@PathVariable("id") Long id) {
+		return consultantRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Consultant not found with id: " + id));
+	}
+
 }
