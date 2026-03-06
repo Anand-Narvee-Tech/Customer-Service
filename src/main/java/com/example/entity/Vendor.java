@@ -64,10 +64,15 @@ public class Vendor {
 
 	@Column(name = "website")
 	private String website;
-	
-	
+
 	@Column(name = "adminId")
 	private Long adminId;
+
+	@Column(name = "attention_to")
+	private String attentionTo;
+
+	@Column(name = "addition_doc")
+	private String additionDoc;
 
 	@PrePersist
 	public void prePersist() {

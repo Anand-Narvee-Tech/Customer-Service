@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
 import org.springframework.core.io.Resource;
@@ -32,9 +33,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.example.DTO.ConsultantRequestDTO;
 import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
 import com.example.DTO.SearchRequest;
+import com.example.client.InvoiceFeignClient;
 import com.example.entity.Consultant;
 import com.example.repository.ConsultantRepository;
 import com.example.service.ConsulanatService;
@@ -46,11 +50,12 @@ public class ConsuantCon {
 
 	@Autowired
 	private ConsulanatService consultantServ;
-	
-	
+
 	@Autowired
 	private ConsultantRepository consultantRepository;
-	
+
+	@Autowired
+	private InvoiceFeignClient invoiceFeignClient;
 
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -111,29 +116,55 @@ public class ConsuantCon {
 	// ================= GET ALL =================
 
 //Bhargav 21-02-26
+//	@PostMapping("/searchAndSort")
+//	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
+//	        @RequestParam(defaultValue = "0") int page,
+//	        @RequestParam(defaultValue = "10") int size,
+//	        @RequestParam(defaultValue = "id") String sortField,
+//	        @RequestParam(defaultValue = "asc") String sortDir,
+//	        @RequestParam(required = false) String keyword,
+//	        @RequestParam(required = false) Long adminId) {
+//
+//	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
+//	            Sort.by(sortField).descending() :
+//	            Sort.by(sortField).ascending();
+//
+//	    PageRequest pageable = PageRequest.of(page, size, sort);
+//
+//	    Page<Consultant> result =
+//	    		consultantServ.getConsultants(keyword, adminId, pageable);
+//
+//	    return ResponseEntity.ok(result);
+//	}
+
 	@PostMapping("/searchAndSort")
 	public ResponseEntity<Page<Consultant>> searchAndSortConsultants(
-	        @RequestParam(defaultValue = "0") int page,
-	        @RequestParam(defaultValue = "10") int size,
-	        @RequestParam(defaultValue = "id") String sortField,
-	        @RequestParam(defaultValue = "asc") String sortDir,
-	        @RequestParam(required = false) String keyword,
-	        @RequestParam(required = false) Long adminId) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "10") int size,
+			@RequestParam(name = "sortField", defaultValue = "id") String sortField,
+			@RequestParam(name = "sortDir", defaultValue = "asc") String sortDir,
+			@RequestParam(name = "keyword", required = false) String keyword,
+			@RequestParam(name = "adminId", required = false) Long adminId) {
 
-	    Sort sort = sortDir.equalsIgnoreCase("desc") ?
-	            Sort.by(sortField).descending() :
-	            Sort.by(sortField).ascending();
+		// sanitize keyword
+		if (keyword == null) {
+			keyword = "";
+		}
 
-	    PageRequest pageable = PageRequest.of(page, size, sort);
+		// validate sort direction
+		Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-	    Page<Consultant> result =
-	    		consultantServ.getConsultants(keyword, adminId, pageable);
+		Sort sort = Sort.by(direction, sortField);
 
-	    return ResponseEntity.ok(result);
+		PageRequest pageable = PageRequest.of(page, size, sort);
+
+		Page<Consultant> result = consultantServ.getConsultants(keyword, adminId, pageable);
+
+		return ResponseEntity.ok(result);
 	}
-	
+
 //Bhargav 21-02-26
-	
+
 	// ================= DEACTIVATE =================
 	@DeleteMapping("/{id}")
 	public ResponseEntity<RestAPIResponse> deactivateConsultant(@PathVariable("id") Long id) {
@@ -174,6 +205,31 @@ public class ConsuantCon {
 				.body(resource);
 	}
 
+	@GetMapping("/uploads/vendor-additional-docs/{fileName:.+}")
+	public ResponseEntity<Resource> getVendorAdditionalDoc(@PathVariable("fileName") String fileName)
+			throws IOException {
+
+		String BASE_PATH = "uploads/vendor-additional-docs";
+
+		Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
+		Path filePath = basePath.resolve(fileName).normalize();
+
+		// 🔐 Security check
+		if (!filePath.startsWith(basePath)) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		Resource resource = new UrlResource(filePath.toUri());
+
+		if (!resource.exists() || !resource.isReadable()) {
+			return ResponseEntity.notFound().build();
+		}
+
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
+				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+				.body(resource);
+	}
+
 	@GetMapping("/net-terms")
 	public ResponseEntity<List<Map<String, Object>>> getNetTerms() {
 
@@ -186,6 +242,33 @@ public class ConsuantCon {
 		}).collect(Collectors.toList());
 
 		return ResponseEntity.ok(response);
+	}
+
+	@DeleteMapping("/delete/{id}")
+	public ResponseEntity<RestAPIResponse> deleteConsultant(@PathVariable("id") Long id) {
+
+		// Call invoice service to check if invoices exist
+		boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
+
+		if (hasInvoices) {
+			throw new RuntimeException("Consultant cannot be deleted because invoices exist");
+		}
+
+		if (hasInvoices) {
+			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST).body(new RestAPIResponse("error",
+					"Cannot delete consultant. Invoices exist for this consultant.", null));
+		}
+
+		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
+
+		return ResponseEntity
+				.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.orElse(null)));
+	}
+
+	@GetMapping("/{id}")
+	public Consultant getConsultant(@PathVariable("id") Long id) {
+		return consultantRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Consultant not found with id: " + id));
 	}
 
 }
