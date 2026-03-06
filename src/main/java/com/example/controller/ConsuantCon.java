@@ -224,7 +224,6 @@ public class ConsuantCon {
 		if (!resource.exists() || !resource.isReadable()) {
 			return ResponseEntity.notFound().build();
 		}
-
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
 				.body(resource);
