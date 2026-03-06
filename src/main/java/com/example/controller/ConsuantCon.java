@@ -251,12 +251,8 @@ public class ConsuantCon {
 		boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
 
 		if (hasInvoices) {
-			throw new RuntimeException("Consultant cannot be deleted because invoices exist");
-		}
-
-		if (hasInvoices) {
-			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST).body(new RestAPIResponse("error",
-					"Cannot delete consultant. Invoices exist for this consultant.", null));
+			return ResponseEntity.ok(
+					new RestAPIResponse("fail", "Cannot delete consultant. Invoices exist for this consultant.", null));
 		}
 
 		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
