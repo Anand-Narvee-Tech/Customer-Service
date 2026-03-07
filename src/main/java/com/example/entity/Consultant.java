@@ -82,6 +82,13 @@ public class Consultant {
 	@Column(name = "invoice_mails")
 	private String invoiceMail;
 
+	// consultant address -vasim
+	private String address;
+	private String suite;
+	private String city;
+	private String country;
+	private String pincode;
+
 	@PrePersist
 	public void prePersist() {
 		if (this.cid == null) {

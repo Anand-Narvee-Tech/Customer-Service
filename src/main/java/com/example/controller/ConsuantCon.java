@@ -81,29 +81,28 @@ public class ConsuantCon {
 
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> createConsultant(
-	        @RequestPart("data") String dataJson,
-	        @RequestPart(value = "file", required = false) MultipartFile file) {
+	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
+			@RequestPart(value = "file", required = false) MultipartFile file) {
 
-	    try {
+		try {
 
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+			ObjectMapper objectMapper = new ObjectMapper();
+			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
-	        Consultant savedConsultant = consultantServ.save(data, file);
+			Consultant savedConsultant = consultantServ.save(data, file);
 
-	        return ResponseEntity.ok(
-	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant)
-	        );
+			return ResponseEntity
+					.ok(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
 
-	    } catch (Exception ex) {
+		} catch (Exception ex) {
 
-	        ex.printStackTrace();
+			ex.printStackTrace();
 
-	        return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST)
-	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
-	    }
+			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST)
+					.body(new RestAPIResponse("fail", ex.getMessage(), null));
+		}
 	}
+
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> updateConsultant(@PathVariable("id") Long id,
