@@ -160,8 +160,17 @@ public class VendorController {
 		}
 	}
 
-	@GetMapping("/exists/vendor-name/{vendorName}")
-	public ResponseEntity<RestAPIResponse> checkVendorName(@PathVariable("vendorName") String vendorName,
+//	@GetMapping("/exists/vendor-name/{vendorName}")
+//	public ResponseEntity<RestAPIResponse> checkVendorName(@PathVariable("vendorName") String vendorName,
+//			@RequestParam(value = "vendorId", required = false) Long vendorId) {
+//
+//		boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);
+//
+//		return ResponseEntity.ok(new RestAPIResponse("success",
+//				exists ? "Vendor name already exists" : "Vendor name is available", exists));
+//	}
+	@GetMapping("/exists/vendor-name")
+	public ResponseEntity<RestAPIResponse> checkVendorName(@RequestParam("vendorName") String vendorName,
 			@RequestParam(value = "vendorId", required = false) Long vendorId) {
 
 		boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);

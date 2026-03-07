@@ -37,45 +37,64 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	@Override
 	public Consultant save(Consultant req, MultipartFile file) {
-		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
-			throw new RuntimeException("Consultant already exists with this email");
-		}
 
-		if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
-			throw new RuntimeException("Vendor ID is required");
-		}
+	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+	        throw new RuntimeException("Consultant already exists with this email");
+	    }
 
-		Long vendorId = req.getVendor().getVendorId();
+	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
+	        throw new RuntimeException("Vendor ID is required");
+	    }
 
-		Vendor vendor = vendorRepository.findById(vendorId)
-				.orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+	    Long vendorId = req.getVendor().getVendorId();
 
-		req.setVendor(vendor);
+	    Vendor vendor = vendorRepository.findById(vendorId)
+	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
 
-		if (file != null && !file.isEmpty()) {
-			req.setDocumentPath(storeFile(file));
-		}
+	    req.setVendor(vendor);
 
-		req.setCreatedBy(getLoggedInUserId());
+	    // File Upload
+	    if (file != null && !file.isEmpty()) {
 
-		return consultantRepository.save(req);
+	        // 50MB validation
+	        long maxSize = 50 * 1024 * 1024;
+
+	        if (file.getSize() > maxSize) {
+	            throw new RuntimeException("File size should not exceed 50MB");
+	        }
+
+	        req.setDocumentPath(storeFile(file));
+	    }
+
+	    req.setCreatedBy(getLoggedInUserId());
+
+	    return consultantRepository.save(req);
 	}
-
 	// ✅ File storage
 	private String storeFile(MultipartFile file) {
-		try {
-			Path uploadDir = Paths.get("uploads/consultants");
-			Files.createDirectories(uploadDir);
 
-			String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-			Path filePath = uploadDir.resolve(fileName);
+	    try {
 
-			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+	        Path uploadDir = Paths.get("uploads/consultants");
 
-			return filePath.toString();
-		} catch (IOException e) {
-			throw new RuntimeException("File upload failed", e);
-		}
+	        if (!Files.exists(uploadDir)) {
+	            Files.createDirectories(uploadDir);
+	        }
+
+	        String originalFileName = file.getOriginalFilename();
+
+	        String fileName = UUID.randomUUID() + "_" + originalFileName;
+
+	        Path filePath = uploadDir.resolve(fileName);
+
+	        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+	        return filePath.toString();
+
+	    } catch (IOException e) {
+
+	        throw new RuntimeException("File upload failed: " + e.getMessage());
+	    }
 	}
 
 	@Override

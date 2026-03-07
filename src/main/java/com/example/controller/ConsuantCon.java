@@ -58,27 +58,52 @@ public class ConsuantCon {
 	private InvoiceFeignClient invoiceFeignClient;
 
 	// ================= CREATE =================
+//	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
+//																									// Consultant
+//			@RequestPart(value = "file", required = false) MultipartFile file) {
+//
+//		try {
+//			ObjectMapper objectMapper = new ObjectMapper();
+//			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+//
+//			Consultant savedConsultant = consultantServ.save(data, file);
+//
+//			return ResponseEntity.status(HttpStatus.SC_OK)
+//					.body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+//
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//			return ResponseEntity.status(HttpStatus.SC_OK)
+//					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+//		}
+//	}
+
+	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
-																									// Consultant
-			@RequestPart(value = "file", required = false) MultipartFile file) {
+	public ResponseEntity<RestAPIResponse> createConsultant(
+	        @RequestPart("data") String dataJson,
+	        @RequestPart(value = "file", required = false) MultipartFile file) {
 
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+	    try {
 
-			Consultant savedConsultant = consultantServ.save(data, file);
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
-			return ResponseEntity.status(HttpStatus.SC_OK)
-					.body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+	        Consultant savedConsultant = consultantServ.save(data, file);
 
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return ResponseEntity.status(HttpStatus.SC_OK)
-					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
-		}
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant)
+	        );
+
+	    } catch (Exception ex) {
+
+	        ex.printStackTrace();
+
+	        return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST)
+	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
+	    }
 	}
-
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> updateConsultant(@PathVariable("id") Long id,
