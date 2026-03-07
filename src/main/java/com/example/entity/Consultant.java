@@ -86,6 +86,7 @@ public class Consultant {
 	private String address;
 	private String suite;
 	private String city;
+	private String state;
 	private String country;
 	private String pincode;
 
