@@ -63,38 +63,41 @@ public class VendorServiceImpl implements VendorService {
 	@Override
 	public Vendor createVendor(Vendor vendor, MultipartFile msaFile, MultipartFile additionDocFile) {
 
+		List<Vendor> duplicates = vendorRepository.findDuplicates(vendor.getVendorName(), vendor.getEmail(),
+				vendor.getEinNumber(), vendor.getPhoneNumber());
+
 		List<String> duplicateFields = new ArrayList<>();
 
-		if (vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName()))
-			duplicateFields.add("vendorName");
+		for (Vendor v : duplicates) {
+			if (v.getVendorName().equalsIgnoreCase(vendor.getVendorName()))
+				duplicateFields.add("vendorName");
 
-		if (vendorRepository.existsByEmailIgnoreCase(vendor.getEmail()))
-			duplicateFields.add("email");
+			if (v.getEmail().equalsIgnoreCase(vendor.getEmail()))
+				duplicateFields.add("email");
 
-		if (vendorRepository.existsByEinNumber(vendor.getEinNumber()))
-			duplicateFields.add("einNumber");
+			if (v.getEinNumber().equals(vendor.getEinNumber()))
+				duplicateFields.add("einNumber");
 
-		if (vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber()))
-			duplicateFields.add("phoneNumber");
+			if (v.getPhoneNumber().equals(vendor.getPhoneNumber()))
+				duplicateFields.add("phoneNumber");
+		}
 
 		if (!duplicateFields.isEmpty()) {
 			throw new DuplicateVendorException(
 					"Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
 		}
 
-		// ✅ Upload MSA
+		// upload files
 		if (msaFile != null && !msaFile.isEmpty()) {
 			vendor.setMsaAgreement(storeFile(msaFile, "vendor-msa"));
 		}
 
-		// ✅ Upload Additional Document
 		if (additionDocFile != null && !additionDocFile.isEmpty()) {
 			vendor.setAdditionDoc(storeFile(additionDocFile, "vendor-additional-docs"));
 		}
 
 		return vendorRepository.save(vendor);
 	}
-
 	// ================= FILE UPLOAD =================
 //	private String storeMsaFile(MultipartFile file) {
 //
@@ -426,12 +429,15 @@ public class VendorServiceImpl implements VendorService {
 
 	@Override
 	public boolean isVendorNameDuplicate(String vendorName, Long vendorId) {
+
 		if (vendorName == null || vendorName.isBlank()) {
 			return false;
 		}
+
 		if (vendorId != null) {
 			return vendorRepository.existsByVendorNameIgnoreCaseAndVendorIdNot(vendorName, vendorId);
 		}
+
 		return vendorRepository.existsByVendorNameIgnoreCase(vendorName);
 	}
 

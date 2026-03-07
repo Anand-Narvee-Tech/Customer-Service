@@ -58,24 +58,48 @@ public class ConsuantCon {
 	private InvoiceFeignClient invoiceFeignClient;
 
 	// ================= CREATE =================
+//	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
+//																									// Consultant
+//			@RequestPart(value = "file", required = false) MultipartFile file) {
+//
+//		try {
+//			ObjectMapper objectMapper = new ObjectMapper();
+//			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+//
+//			Consultant savedConsultant = consultantServ.save(data, file);
+//
+//			return ResponseEntity.status(HttpStatus.SC_OK)
+//					.body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+//
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//			return ResponseEntity.status(HttpStatus.SC_OK)
+//					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+//		}
+//	}
+
+	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
-																									// Consultant
+	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
 			@RequestPart(value = "file", required = false) MultipartFile file) {
 
 		try {
+
 			ObjectMapper objectMapper = new ObjectMapper();
 			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
 			Consultant savedConsultant = consultantServ.save(data, file);
 
-			return ResponseEntity.status(HttpStatus.SC_OK)
-					.body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+			return ResponseEntity
+					.ok(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
 
 		} catch (Exception ex) {
+
 			ex.printStackTrace();
-			return ResponseEntity.status(HttpStatus.SC_OK)
-					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+
+			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST)
+					.body(new RestAPIResponse("fail", ex.getMessage(), null));
 		}
 	}
 
@@ -224,7 +248,6 @@ public class ConsuantCon {
 		if (!resource.exists() || !resource.isReadable()) {
 			return ResponseEntity.notFound().build();
 		}
-
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
 				.body(resource);
@@ -251,12 +274,8 @@ public class ConsuantCon {
 		boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
 
 		if (hasInvoices) {
-			throw new RuntimeException("Consultant cannot be deleted because invoices exist");
-		}
-
-		if (hasInvoices) {
-			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST).body(new RestAPIResponse("error",
-					"Cannot delete consultant. Invoices exist for this consultant.", null));
+			return ResponseEntity.ok(
+					new RestAPIResponse("fail", "Cannot delete consultant. Invoices exist for this consultant.", null));
 		}
 
 		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);

@@ -17,70 +17,78 @@ import com.example.entity.Vendor;
 @Repository
 public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecificationExecutor<Vendor> {
 
-    // ---------------- DUPLICATE CHECK ----------------
-    Optional<Vendor> findByVendorName(String vendorName);
-    Optional<Vendor> findByEmail(String email);
-    Optional<Vendor> findByEinNumber(String einNumber);
-    Optional<Vendor> findByPhoneNumber(String phoneNumber);
+	// ---------------- DUPLICATE CHECK ----------------
+	Optional<Vendor> findByVendorName(String vendorName);
 
-    // ---------------- SEARCH BY KEYWORD (ALL FIELDS INCLUDING EMBEDDED) ----------------
-    @Query("SELECT v FROM Vendor v " +
-           "LEFT JOIN v.vendorAddress a " +
-           "WHERE LOWER(v.vendorName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(v.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(a.street) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(a.suite) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(a.city) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(a.state) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR LOWER(a.zipCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "   OR v.einNumber LIKE CONCAT('%', :keyword, '%') " +
-           "   OR v.phoneNumber LIKE CONCAT('%', :keyword, '%')")
-    Page<Vendor> searchVendors(@Param("keyword") String keyword, Pageable pageable);
+	Optional<Vendor> findByEmail(String email);
 
-    // ---------------- SEARCH BY EMAIL DOMAIN ----------------
-    List<Vendor> findByEmailEndingWith(String domain);
-    Optional<Vendor> findByEmailContains(String domain);
-    
-  
+	Optional<Vendor> findByEinNumber(String einNumber);
 
-    boolean existsByEinNumber(String einNumber);
+	Optional<Vendor> findByPhoneNumber(String phoneNumber);
 
-    // ---------------- SEARCH BY NAME ----------------
-    List<Vendor> findByVendorNameContainingIgnoreCase(String name);
-    
-    
-    boolean existsByVendorNameIgnoreCase(String vendorName);
-    boolean existsByVendorNameIgnoreCaseAndVendorIdNot(String vendorName, Long vendorId);
+	// ---------------- SEARCH BY KEYWORD (ALL FIELDS INCLUDING EMBEDDED)
+	// ----------------
+	@Query("SELECT v FROM Vendor v " + "LEFT JOIN v.vendorAddress a "
+			+ "WHERE LOWER(v.vendorName) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR LOWER(v.email) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR LOWER(a.street) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR LOWER(a.suite) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR LOWER(a.city) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR LOWER(a.state) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR LOWER(a.zipCode) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+			+ "   OR v.einNumber LIKE CONCAT('%', :keyword, '%') "
+			+ "   OR v.phoneNumber LIKE CONCAT('%', :keyword, '%')")
+	Page<Vendor> searchVendors(@Param("keyword") String keyword, Pageable pageable);
 
-    boolean existsByEmailIgnoreCase(String email);
-    boolean existsByEmailIgnoreCaseAndVendorIdNot(String email, Long vendorId);
+	// ---------------- SEARCH BY EMAIL DOMAIN ----------------
+	List<Vendor> findByEmailEndingWith(String domain);
 
-    boolean existsByEinNumberIgnoreCase(String einNumber);
-    boolean existsByEinNumberIgnoreCaseAndVendorIdNot(String einNumber, Long vendorId);
+	Optional<Vendor> findByEmailContains(String domain);
 
-    boolean existsByPhoneNumber(String phoneNumber);
-    boolean existsByPhoneNumberAndVendorIdNot(String phoneNumber, Long vendorId);
-    
-    @Query("SELECT COUNT(v) FROM Vendor v")
-    Long getVendorCount();
-    
-    @Query("SELECT v.vendorName FROM Vendor v WHERE v.createdAt >= :since")
-    List<String> findVendorsAddedSince(@Param("since") LocalDateTime since);
-    
+	boolean existsByEinNumber(String einNumber);
 
+	// ---------------- SEARCH BY NAME ----------------
+	List<Vendor> findByVendorNameContainingIgnoreCase(String name);
 
-        @Query(
-          value = """
-            SELECT EXTRACT(MONTH FROM created_at) AS month,
-                   COUNT(*) AS count
-            FROM vendor_info
-            WHERE EXTRACT(YEAR FROM created_at) = :year
-            GROUP BY EXTRACT(MONTH FROM created_at)
-           ORDER BY EXTRACT(MONTH FROM created_at)
-          """,
-          nativeQuery = true
-        )
-        List<Object[]> getVendorCountPerMonth(@Param("year") int year);
+	boolean existsByVendorNameIgnoreCase(String vendorName);
 
+	boolean existsByVendorNameIgnoreCaseAndVendorIdNot(String vendorName, Long vendorId);
+
+	boolean existsByEmailIgnoreCase(String email);
+
+	boolean existsByEmailIgnoreCaseAndVendorIdNot(String email, Long vendorId);
+
+	boolean existsByEinNumberIgnoreCase(String einNumber);
+
+	boolean existsByEinNumberIgnoreCaseAndVendorIdNot(String einNumber, Long vendorId);
+
+	boolean existsByPhoneNumber(String phoneNumber);
+
+	boolean existsByPhoneNumberAndVendorIdNot(String phoneNumber, Long vendorId);
+
+	@Query("SELECT COUNT(v) FROM Vendor v")
+	Long getVendorCount();
+
+	@Query("SELECT v.vendorName FROM Vendor v WHERE v.createdAt >= :since")
+	List<String> findVendorsAddedSince(@Param("since") LocalDateTime since);
+
+	@Query("""
+			SELECT v FROM Vendor v
+			WHERE LOWER(v.vendorName) = LOWER(:vendorName)
+			   OR LOWER(v.email) = LOWER(:email)
+			   OR v.einNumber = :einNumber
+			   OR v.phoneNumber = :phoneNumber
+			""")
+	List<Vendor> findDuplicates(String vendorName, String email, String einNumber, String phoneNumber);
+
+	@Query(value = """
+			  SELECT EXTRACT(MONTH FROM created_at) AS month,
+			         COUNT(*) AS count
+			  FROM vendor_info
+			  WHERE EXTRACT(YEAR FROM created_at) = :year
+			  GROUP BY EXTRACT(MONTH FROM created_at)
+			 ORDER BY EXTRACT(MONTH FROM created_at)
+			""", nativeQuery = true)
+	List<Object[]> getVendorCountPerMonth(@Param("year") int year);
 
 }
