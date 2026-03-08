@@ -109,6 +109,16 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+        	<groupId>com.example</groupId>
+        	<artifactId>invoice-login-service</artifactId>
+        	<version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+        	<groupId>com.example</groupId>
+        	<artifactId>Invoice-Service</artifactId>
+        	<version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <!-- Spring Cloud BOM -->
