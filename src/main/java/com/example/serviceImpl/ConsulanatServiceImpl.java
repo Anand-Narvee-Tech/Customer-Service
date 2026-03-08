@@ -173,6 +173,9 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 		if (req.getCity() != null)
 			existing.setCity(req.getCity());
+		
+		if (req.getState() != null)
+			existing.setState(req.getState());
 
 		if (req.getCountry() != null)
 			existing.setCountry(req.getCountry());
