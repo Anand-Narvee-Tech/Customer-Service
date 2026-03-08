@@ -79,6 +79,7 @@ public class ConsuantCon {
 //		}
 //	}
 
+
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
@@ -102,6 +103,7 @@ public class ConsuantCon {
 					.body(new RestAPIResponse("fail", ex.getMessage(), null));
 		}
 	}
+
 
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
