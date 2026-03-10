@@ -35,42 +35,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	@Autowired
 	private VendorRepository vendorRepository;
 
-	@Override
-	public Consultant save(Consultant req, MultipartFile file) {
-
-		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
-			throw new RuntimeException("Consultant already exists with this email");
-		}
-
-		if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
-			throw new RuntimeException("Vendor ID is required");
-		}
-
-		Long vendorId = req.getVendor().getVendorId();
-
-		Vendor vendor = vendorRepository.findById(vendorId)
-				.orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
-
-		req.setVendor(vendor);
-
-		// File Upload
-		if (file != null && !file.isEmpty()) {
-
-			// 50MB validation
-			long maxSize = 50 * 1024 * 1024;
-
-			if (file.getSize() > maxSize) {
-				throw new RuntimeException("File size should not exceed 50MB");
-			}
-
-			req.setDocumentPath(storeFile(file));
-		}
-
-		req.setCreatedBy(getLoggedInUserId());
-
-		return consultantRepository.save(req);
-	}
-	// ✅ File storage
+	
 //	private String storeFile(MultipartFile file) {
 //
 //	    try {
@@ -96,6 +61,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 //	        throw new RuntimeException("File upload failed: " + e.getMessage());
 //	    }
 //	}
+
 
 	@Override
 	public Consultant getById(Long cid) {
@@ -330,6 +296,41 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 		// 4️⃣ return deleted consultant
 		return Optional.of(consultant);
+	}
+
+	@Override
+	public Consultant save(Consultant req, MultipartFile file) {
+
+		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+			throw new RuntimeException("Consultant already exists with this email");
+		}
+
+
+	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
+	        throw new RuntimeException("Vendor ID is required");
+	    }
+
+	    Long vendorId = req.getVendor().getVendorId();
+
+	    Vendor vendor = vendorRepository.findById(vendorId)
+	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+
+
+		// File Upload
+		if (file != null && !file.isEmpty()) {
+
+			// 50MB validation
+			long maxSize = 50 * 1024 * 1024;
+
+			if (file.getSize() > maxSize) {
+				throw new RuntimeException("File size should not exceed 50MB");
+			}
+
+			req.setDocumentPath(storeFile(file));
+		}
+		return req;
+
+		
 	}
 
 }
