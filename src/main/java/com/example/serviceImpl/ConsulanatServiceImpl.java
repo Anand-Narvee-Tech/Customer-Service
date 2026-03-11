@@ -307,16 +307,15 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	@Override
 	public Optional<Consultant> deleteById(Long id) {
 
-		// 1️⃣ Find consultant
 		Optional<Consultant> consultantOpt = consultantRepository.findById(id);
 
 		if (consultantOpt.isEmpty()) {
-			throw new RuntimeException("Consultant not found with id: " + id);
+			return Optional.empty();
 		}
 
 		Consultant consultant = consultantOpt.get();
 
-		// 2️⃣ Delete document file (very important — you store documentPath)
+		// Delete file if exists
 		if (consultant.getDocumentPath() != null) {
 			try {
 				java.nio.file.Path path = java.nio.file.Paths.get(consultant.getDocumentPath());
@@ -326,10 +325,8 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 			}
 		}
 
-		// 3️⃣ Delete from DB
 		consultantRepository.delete(consultant);
 
-		// 4️⃣ return deleted consultant
 		return Optional.of(consultant);
 	}
 

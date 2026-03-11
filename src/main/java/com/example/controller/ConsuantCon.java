@@ -79,7 +79,6 @@ public class ConsuantCon {
 //		}
 //	}
 
-
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
@@ -103,7 +102,6 @@ public class ConsuantCon {
 					.body(new RestAPIResponse("fail", ex.getMessage(), null));
 		}
 	}
-
 
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -272,18 +270,30 @@ public class ConsuantCon {
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<RestAPIResponse> deleteConsultant(@PathVariable("id") Long id) {
 
-		// Call invoice service to check if invoices exist
-		boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
+		try {
 
-		if (hasInvoices) {
-			return ResponseEntity.ok(
-					new RestAPIResponse("fail", "Cannot delete consultant. Invoices exist for this consultant.", null));
+			// Check invoices
+			boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
+
+			if (hasInvoices) {
+				return ResponseEntity.ok(new RestAPIResponse("fail",
+						"Consultant cannot be deleted because invoices are associated with this consultant.", null));
+			}
+
+			Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
+
+			if (deletedConsultant.isEmpty()) {
+				return ResponseEntity.ok(new RestAPIResponse("fail", "Consultant not found with id: " + id, null));
+			}
+
+			return ResponseEntity
+					.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.get()));
+
+		} catch (Exception e) {
+
+			return ResponseEntity.ok(new RestAPIResponse("error",
+					"Consultant cannot be deleted because invoices are associated with this consultant.", null));
 		}
-
-		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
-
-		return ResponseEntity
-				.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.orElse(null)));
 	}
 
 	@GetMapping("/{id}")
