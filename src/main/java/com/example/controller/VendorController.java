@@ -286,9 +286,26 @@ public class VendorController {
 	@DeleteMapping("/{vendorId}")
 	public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable("vendorId") Long vendorId) {
 
-		vendorServiceImpl.deleteVendor(vendorId);
+	    try {
 
-		return ResponseEntity.ok(new RestAPIResponse("success", "Vendor deleted successfully", null));
+	        vendorServiceImpl.deleteVendor(vendorId);
+
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("success", "Vendor deleted successfully", null)
+	        );
+
+	    } catch (IllegalStateException ex) {
+
+	        return ResponseEntity.ok(
+	        		new RestAPIResponse("fail", "Consultants exist for this vendor. Please delete them first.", null)
+	        );
+
+	    } catch (Exception ex) {
+
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("error", "Consultants exist for this vendor. Please delete them first. ", null)
+	        );
+	    }
 	}
 
 }
