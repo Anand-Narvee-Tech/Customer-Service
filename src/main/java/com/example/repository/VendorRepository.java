@@ -75,11 +75,12 @@ public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecif
 	@Query("""
 			SELECT v FROM Vendor v
 			WHERE LOWER(v.vendorName) = LOWER(:vendorName)
-			   OR LOWER(v.email) = LOWER(:email)
-			   OR v.einNumber = :einNumber
-			   OR v.phoneNumber = :phoneNumber
+			OR LOWER(v.email) = LOWER(:email)
+			OR v.einNumber = :einNumber
+			OR v.phoneNumber = :phoneNumber
 			""")
-	List<Vendor> findDuplicates(String vendorName, String email, String einNumber, String phoneNumber);
+	List<Vendor> findDuplicates(@Param("vendorName") String vendorName, @Param("email") String email,
+			@Param("einNumber") String einNumber, @Param("phoneNumber") String phoneNumber);
 
 	@Query(value = """
 			  SELECT EXTRACT(MONTH FROM created_at) AS month,
