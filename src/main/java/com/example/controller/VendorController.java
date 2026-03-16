@@ -160,8 +160,17 @@ public class VendorController {
 		}
 	}
 
-	@GetMapping("/exists/vendor-name/{vendorName}")
-	public ResponseEntity<RestAPIResponse> checkVendorName(@PathVariable("vendorName") String vendorName,
+//	@GetMapping("/exists/vendor-name/{vendorName}")
+//	public ResponseEntity<RestAPIResponse> checkVendorName(@PathVariable("vendorName") String vendorName,
+//			@RequestParam(value = "vendorId", required = false) Long vendorId) {
+//
+//		boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);
+//
+//		return ResponseEntity.ok(new RestAPIResponse("success",
+//				exists ? "Vendor name already exists" : "Vendor name is available", exists));
+//	}
+	@GetMapping("/exists/vendor-name")
+	public ResponseEntity<RestAPIResponse> checkVendorName(@RequestParam("vendorName") String vendorName,
 			@RequestParam(value = "vendorId", required = false) Long vendorId) {
 
 		boolean exists = vendorServiceImpl.isVendorNameDuplicate(vendorName, vendorId);
@@ -277,9 +286,26 @@ public class VendorController {
 	@DeleteMapping("/{vendorId}")
 	public ResponseEntity<RestAPIResponse> deleteVendor(@PathVariable("vendorId") Long vendorId) {
 
-		vendorServiceImpl.deleteVendor(vendorId);
+	    try {
 
-		return ResponseEntity.ok(new RestAPIResponse("success", "Vendor deleted successfully", null));
+	        vendorServiceImpl.deleteVendor(vendorId);
+
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("success", "Vendor deleted successfully", null)
+	        );
+
+	    } catch (IllegalStateException ex) {
+
+	        return ResponseEntity.ok(
+	        		new RestAPIResponse("fail", "Consultants exist for this vendor. Please delete them first.", null)
+	        );
+
+	    } catch (Exception ex) {
+
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("error", "Consultants exist for this vendor. Please delete them first. ", null)
+	        );
+	    }
 	}
 
 }

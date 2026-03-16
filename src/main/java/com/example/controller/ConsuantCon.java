@@ -58,24 +58,48 @@ public class ConsuantCon {
 	private InvoiceFeignClient invoiceFeignClient;
 
 	// ================= CREATE =================
+//	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
+//																									// Consultant
+//			@RequestPart(value = "file", required = false) MultipartFile file) {
+//
+//		try {
+//			ObjectMapper objectMapper = new ObjectMapper();
+//			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+//
+//			Consultant savedConsultant = consultantServ.save(data, file);
+//
+//			return ResponseEntity.status(HttpStatus.SC_OK)
+//					.body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+//
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//			return ResponseEntity.status(HttpStatus.SC_OK)
+//					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+//		}
+//	}
+
+	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson, // ← String instead of
-																									// Consultant
+	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
 			@RequestPart(value = "file", required = false) MultipartFile file) {
 
 		try {
+
 			ObjectMapper objectMapper = new ObjectMapper();
 			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
 			Consultant savedConsultant = consultantServ.save(data, file);
 
-			return ResponseEntity.status(HttpStatus.SC_OK)
-					.body(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+			return ResponseEntity
+					.ok(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
 
 		} catch (Exception ex) {
+
 			ex.printStackTrace();
-			return ResponseEntity.status(HttpStatus.SC_OK)
-					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+
+			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST)
+					.body(new RestAPIResponse("fail", ex.getMessage(), null));
 		}
 	}
 
@@ -224,7 +248,6 @@ public class ConsuantCon {
 		if (!resource.exists() || !resource.isReadable()) {
 			return ResponseEntity.notFound().build();
 		}
-
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
 				.body(resource);
@@ -247,22 +270,30 @@ public class ConsuantCon {
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<RestAPIResponse> deleteConsultant(@PathVariable("id") Long id) {
 
-		// Call invoice service to check if invoices exist
-		boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
+		try {
 
-		if (hasInvoices) {
-			throw new RuntimeException("Consultant cannot be deleted because invoices exist");
+			// Check invoices
+			boolean hasInvoices = invoiceFeignClient.hasInvoices(id);
+
+			if (hasInvoices) {
+				return ResponseEntity.ok(new RestAPIResponse("fail",
+						"Consultant cannot be deleted because invoices are associated with this consultant.", null));
+			}
+
+			Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
+
+			if (deletedConsultant.isEmpty()) {
+				return ResponseEntity.ok(new RestAPIResponse("fail", "Consultant not found with id: " + id, null));
+			}
+
+			return ResponseEntity
+					.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.get()));
+
+		} catch (Exception e) {
+
+			return ResponseEntity.ok(new RestAPIResponse("error",
+					"Consultant cannot be deleted because invoices are associated with this consultant.", null));
 		}
-
-		if (hasInvoices) {
-			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST).body(new RestAPIResponse("error",
-					"Cannot delete consultant. Invoices exist for this consultant.", null));
-		}
-
-		Optional<Consultant> deletedConsultant = consultantServ.deleteById(id);
-
-		return ResponseEntity
-				.ok(new RestAPIResponse("success", "Consultant deleted successfully", deletedConsultant.orElse(null)));
 	}
 
 	@GetMapping("/{id}")

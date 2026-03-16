@@ -37,6 +37,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	@Override
 	public Consultant save(Consultant req, MultipartFile file) {
+
 		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
 			throw new RuntimeException("Consultant already exists with this email");
 		}
@@ -50,33 +51,52 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		Vendor vendor = vendorRepository.findById(vendorId)
 				.orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
 
+		// attach vendor
 		req.setVendor(vendor);
 
+		// File Upload
 		if (file != null && !file.isEmpty()) {
+
+			long maxSize = 50 * 1024 * 1024;
+
+			if (file.getSize() > maxSize) {
+				throw new RuntimeException("File size should not exceed 50MB");
+			}
+
 			req.setDocumentPath(storeFile(file));
 		}
 
-		req.setCreatedBy(getLoggedInUserId());
+		// 🔥 THIS WAS MISSING
+		Consultant savedConsultant = consultantRepository.save(req);
 
-		return consultantRepository.save(req);
+		return savedConsultant;
 	}
 
-	// ✅ File storage
-	private String storeFile(MultipartFile file) {
-		try {
-			Path uploadDir = Paths.get("uploads/consultants");
-			Files.createDirectories(uploadDir);
-
-			String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-			Path filePath = uploadDir.resolve(fileName);
-
-			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-			return filePath.toString();
-		} catch (IOException e) {
-			throw new RuntimeException("File upload failed", e);
-		}
-	}
+//	private String storeFile(MultipartFile file) {
+//
+//	    try {
+//
+//	        Path uploadDir = Paths.get("uploads/consultants");
+//
+//	        if (!Files.exists(uploadDir)) {
+//	            Files.createDirectories(uploadDir);
+//	        }
+//
+//	        String originalFileName = file.getOriginalFilename();
+//
+//	        String fileName = UUID.randomUUID() + "_" + originalFileName;
+//
+//	        Path filePath = uploadDir.resolve(fileName);
+//
+//	        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+//
+//	        return filePath.toString();
+//
+//	    } catch (IOException e) {
+//
+//	        throw new RuntimeException("File upload failed: " + e.getMessage());
+//	    }
+//	}
 
 	@Override
 	public Consultant getById(Long cid) {
@@ -136,8 +156,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		return consultantRepository.findAll(pageable);
 	}
 
-	// Bhargav 21-02-26
-
+//vasim
 	@Override
 	public Consultant update(Long id, Consultant req, MultipartFile file) {
 
@@ -152,7 +171,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 			throw new IllegalArgumentException("Consultant already exists with this email");
 		}
 
-		// ================= Update fields =================
+		// ================= Basic Fields =================
 		if (req.getFirstName() != null)
 			existing.setFirstName(req.getFirstName());
 
@@ -177,13 +196,27 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		if (req.getClient() != null)
 			existing.setClient(req.getClient());
 
-		// ================= Net Term =================
-		if (req.getNetTerm() != null)
-			existing.setNetTerm(req.getNetTerm());
+		if (req.getInvoiceMail() != null)
+			existing.setInvoiceMail(req.getInvoiceMail());
 
-		// ================= Client =================
-		if (req.getClient() != null)
-			existing.setClient(req.getClient());
+		// ================= Address =================
+		if (req.getAddress() != null)
+			existing.setAddress(req.getAddress());
+
+		if (req.getSuite() != null)
+			existing.setSuite(req.getSuite());
+
+		if (req.getCity() != null)
+			existing.setCity(req.getCity());
+
+		if (req.getState() != null)
+			existing.setState(req.getState());
+
+		if (req.getCountry() != null)
+			existing.setCountry(req.getCountry());
+
+		if (req.getPincode() != null)
+			existing.setPincode(req.getPincode());
 
 		// ================= Vendor =================
 		if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
@@ -196,16 +229,36 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 			existing.setVendor(vendor);
 		}
 
-		// ================= File =================
+		// ================= File Upload =================
 		if (file != null && !file.isEmpty()) {
-			existing.setDocumentPath(storeFile1(file));
+			existing.setDocumentPath(storeFile(file));
 		}
 
 		// ================= Audit =================
 		existing.setUpdatedBy(getLoggedInUserId());
-		// updatedAt handled by @PreUpdate
 
+		// updatedAt handled automatically by @PreUpdate
 		return consultantRepository.save(existing);
+	}
+
+	// vasim
+	private String storeFile(MultipartFile file) {
+
+		try {
+
+			Path uploadDir = Paths.get("uploads/consultants");
+			Files.createDirectories(uploadDir);
+
+			String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+			Path filePath = uploadDir.resolve(fileName);
+
+			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+			return filePath.toString();
+
+		} catch (IOException e) {
+			throw new RuntimeException("File upload failed", e);
+		}
 	}
 
 	private String storeFile1(MultipartFile file) {
@@ -254,16 +307,15 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	@Override
 	public Optional<Consultant> deleteById(Long id) {
 
-		// 1️⃣ Find consultant
 		Optional<Consultant> consultantOpt = consultantRepository.findById(id);
 
 		if (consultantOpt.isEmpty()) {
-			throw new RuntimeException("Consultant not found with id: " + id);
+			return Optional.empty();
 		}
 
 		Consultant consultant = consultantOpt.get();
 
-		// 2️⃣ Delete document file (very important — you store documentPath)
+		// Delete file if exists
 		if (consultant.getDocumentPath() != null) {
 			try {
 				java.nio.file.Path path = java.nio.file.Paths.get(consultant.getDocumentPath());
@@ -273,11 +325,44 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 			}
 		}
 
-		// 3️⃣ Delete from DB
 		consultantRepository.delete(consultant);
 
-		// 4️⃣ return deleted consultant
 		return Optional.of(consultant);
 	}
+
+//	@Override
+//	public Consultant save(Consultant req, MultipartFile file) {
+//
+//		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+//			throw new RuntimeException("Consultant already exists with this email");
+//		}
+//
+//
+//	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
+//	        throw new RuntimeException("Vendor ID is required");
+//	    }
+//
+//	    Long vendorId = req.getVendor().getVendorId();
+//
+//	    Vendor vendor = vendorRepository.findById(vendorId)
+//	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+//
+//
+//		// File Upload
+//		if (file != null && !file.isEmpty()) {
+//
+//			// 50MB validation
+//			long maxSize = 50 * 1024 * 1024;
+//
+//			if (file.getSize() > maxSize) {
+//				throw new RuntimeException("File size should not exceed 50MB");
+//			}
+//
+//			req.setDocumentPath(storeFile(file));
+//		}
+//		return req;
+//
+//		
+//	}
 
 }

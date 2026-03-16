@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,38 +64,41 @@ public class VendorServiceImpl implements VendorService {
 	@Override
 	public Vendor createVendor(Vendor vendor, MultipartFile msaFile, MultipartFile additionDocFile) {
 
+		List<Vendor> duplicates = vendorRepository.findDuplicates(vendor.getVendorName(), vendor.getEmail(),
+				vendor.getEinNumber(), vendor.getPhoneNumber());
+
 		List<String> duplicateFields = new ArrayList<>();
 
-		if (vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName()))
-			duplicateFields.add("vendorName");
+		for (Vendor v : duplicates) {
+			if (v.getVendorName().equalsIgnoreCase(vendor.getVendorName()))
+				duplicateFields.add("vendorName");
 
-		if (vendorRepository.existsByEmailIgnoreCase(vendor.getEmail()))
-			duplicateFields.add("email");
+			if (v.getEmail().equalsIgnoreCase(vendor.getEmail()))
+				duplicateFields.add("email");
 
-		if (vendorRepository.existsByEinNumber(vendor.getEinNumber()))
-			duplicateFields.add("einNumber");
+			if (v.getEinNumber().equals(vendor.getEinNumber()))
+				duplicateFields.add("einNumber");
 
-		if (vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber()))
-			duplicateFields.add("phoneNumber");
+			if (v.getPhoneNumber().equals(vendor.getPhoneNumber()))
+				duplicateFields.add("phoneNumber");
+		}
 
 		if (!duplicateFields.isEmpty()) {
 			throw new DuplicateVendorException(
 					"Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
 		}
 
-		// ✅ Upload MSA
+		// upload files
 		if (msaFile != null && !msaFile.isEmpty()) {
 			vendor.setMsaAgreement(storeFile(msaFile, "vendor-msa"));
 		}
 
-		// ✅ Upload Additional Document
 		if (additionDocFile != null && !additionDocFile.isEmpty()) {
 			vendor.setAdditionDoc(storeFile(additionDocFile, "vendor-additional-docs"));
 		}
 
 		return vendorRepository.save(vendor);
 	}
-
 	// ================= FILE UPLOAD =================
 //	private String storeMsaFile(MultipartFile file) {
 //
@@ -226,23 +230,24 @@ public class VendorServiceImpl implements VendorService {
 
 		List<String> duplicateFields = new ArrayList<>();
 
-		// Duplicate checks (exclude current vendor)
-		if (!existingVendor.getVendorName().equalsIgnoreCase(vendor.getVendorName())
+		// -------- Duplicate Checks --------
+
+		if (!Objects.equals(existingVendor.getVendorName(), vendor.getVendorName())
 				&& vendorRepository.existsByVendorNameIgnoreCase(vendor.getVendorName())) {
 			duplicateFields.add("vendorName");
 		}
 
-		if (!existingVendor.getEmail().equalsIgnoreCase(vendor.getEmail())
+		if (!Objects.equals(existingVendor.getEmail(), vendor.getEmail())
 				&& vendorRepository.existsByEmailIgnoreCase(vendor.getEmail())) {
 			duplicateFields.add("email");
 		}
 
-		if (!existingVendor.getEinNumber().equals(vendor.getEinNumber())
+		if (!Objects.equals(existingVendor.getEinNumber(), vendor.getEinNumber()) && vendor.getEinNumber() != null
 				&& vendorRepository.existsByEinNumber(vendor.getEinNumber())) {
 			duplicateFields.add("einNumber");
 		}
 
-		if (!existingVendor.getPhoneNumber().equals(vendor.getPhoneNumber())
+		if (!Objects.equals(existingVendor.getPhoneNumber(), vendor.getPhoneNumber())
 				&& vendorRepository.existsByPhoneNumber(vendor.getPhoneNumber())) {
 			duplicateFields.add("phoneNumber");
 		}
@@ -252,7 +257,8 @@ public class VendorServiceImpl implements VendorService {
 					"Duplicate vendor found in fields: " + String.join(", ", duplicateFields));
 		}
 
-		// Basic fields
+		// -------- Basic Fields Update --------
+
 		existingVendor.setVendorName(vendor.getVendorName());
 		existingVendor.setEmail(vendor.getEmail());
 		existingVendor.setPhoneNumber(vendor.getPhoneNumber());
@@ -267,31 +273,34 @@ public class VendorServiceImpl implements VendorService {
 			existingVendor.setVendorAddress(vendor.getVendorAddress());
 		}
 
-		// ---------- MSA FILE ----------
+		// -------- MSA FILE --------
+
 		if (msaFile != null && !msaFile.isEmpty()) {
 
-			// delete old msa
 			deleteOldFile(existingVendor.getMsaAgreement());
 
-			// upload new msa
 			String msaPath = storeFile(msaFile, "vendor-msa");
+
 			existingVendor.setMsaAgreement(msaPath);
 		}
 
-		// ---------- ADDITION DOC FILE ----------
+		// -------- ADDITIONAL DOC --------
+
 		if (additionDoc != null && !additionDoc.isEmpty()) {
 
-			// delete old file
 			deleteOldFile(existingVendor.getAdditionDoc());
 
-			// upload new file
 			String addDocPath = storeFile(additionDoc, "vendor-additional-docs");
+
 			existingVendor.setAdditionDoc(addDocPath);
 		}
 
+		// -------- Save Vendor --------
+
 		Vendor updatedVendor = vendorRepository.save(existingVendor);
 
-		// Notify invoice service
+		// -------- Notify Invoice Service --------
+
 		VendorDTO dto = new VendorDTO();
 		dto.setVendorId(updatedVendor.getVendorId());
 		dto.setVendorName(updatedVendor.getVendorName());
@@ -299,6 +308,7 @@ public class VendorServiceImpl implements VendorService {
 		dto.setPhoneNumber(updatedVendor.getPhoneNumber());
 
 		if (updatedVendor.getVendorAddress() != null) {
+
 			dto.setVendorAddress(new VendorAddressDTO(updatedVendor.getVendorAddress().getStreet(),
 					updatedVendor.getVendorAddress().getSuite(), updatedVendor.getVendorAddress().getCity(),
 					updatedVendor.getVendorAddress().getState(), updatedVendor.getVendorAddress().getZipCode()));
@@ -325,9 +335,11 @@ public class VendorServiceImpl implements VendorService {
 	public void deleteVendor(Long vendorId) {
 
 		long invoiceCount = invoiceFeignClient.countInvoicesByVendor(vendorId);
+
 		if (invoiceCount > 0) {
-			throw new IllegalStateException("Vendor has " + invoiceCount + " Invoices, Delete invoices first.");
+			throw new IllegalStateException("Vendor has " + invoiceCount + " invoices. Delete invoices first.");
 		}
+
 		vendorRepository.deleteById(vendorId);
 	}
 
@@ -426,12 +438,15 @@ public class VendorServiceImpl implements VendorService {
 
 	@Override
 	public boolean isVendorNameDuplicate(String vendorName, Long vendorId) {
+
 		if (vendorName == null || vendorName.isBlank()) {
 			return false;
 		}
+
 		if (vendorId != null) {
 			return vendorRepository.existsByVendorNameIgnoreCaseAndVendorIdNot(vendorName, vendorId);
 		}
+
 		return vendorRepository.existsByVendorNameIgnoreCase(vendorName);
 	}
 
