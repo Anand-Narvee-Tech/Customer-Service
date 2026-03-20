@@ -267,6 +267,7 @@ public class VendorServiceImpl implements VendorService {
 		existingVendor.setAddress(vendor.getAddress());
 		existingVendor.setGstin(vendor.getGstin());
 		existingVendor.setAttentionTo(vendor.getAttentionTo());
+		existingVendor.setDiscount(vendor.getDiscount());
 		existingVendor.setAdminId(vendor.getAdminId());
 
 		if (vendor.getVendorAddress() != null) {
@@ -306,6 +307,7 @@ public class VendorServiceImpl implements VendorService {
 		dto.setVendorName(updatedVendor.getVendorName());
 		dto.setEmail(updatedVendor.getEmail());
 		dto.setPhoneNumber(updatedVendor.getPhoneNumber());
+	
 
 		if (updatedVendor.getVendorAddress() != null) {
 
