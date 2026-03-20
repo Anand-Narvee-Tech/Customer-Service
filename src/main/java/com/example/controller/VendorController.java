@@ -107,16 +107,22 @@ public class VendorController {
 
 		return ResponseEntity.ok(response);
 	}
-
+	
 	@GetMapping("/{vendorId:\\d+}")
-	public ResponseEntity<RestAPIResponse> getById(@PathVariable Long vendorId) {
-		try {
-			return new ResponseEntity<>(new RestAPIResponse("Success", "Getting the Vendor Data successfully By ID",
-					vendorServiceImpl.getById(vendorId)), HttpStatus.OK);
-		} catch (Exception e) {
-			return new ResponseEntity<>(new RestAPIResponse("Error", "Vendor is not found or not exist", null),
-					HttpStatus.OK);
-		}
+	public ResponseEntity<RestAPIResponse> getById(@PathVariable("vendorId") Long vendorId) {
+	    try {
+	        return new ResponseEntity<>(
+	                new RestAPIResponse("Success",
+	                        "Getting the Vendor Data successfully By ID",
+	                        vendorServiceImpl.getById(vendorId)),
+	                HttpStatus.OK);
+	    } catch (Exception e) {
+	        return new ResponseEntity<>(
+	                new RestAPIResponse("Error",
+	                        "Vendor is not found or not exist",
+	                        null),
+	                HttpStatus.OK);
+	    }
 	}
 
 	@GetMapping("/domain/{domain}")
