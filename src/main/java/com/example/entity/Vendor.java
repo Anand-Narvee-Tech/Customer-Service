@@ -73,7 +73,13 @@ public class Vendor {
 
 	@Column(name = "addition_doc")
 	private String additionDoc;
+	
+	//Bhargav 20-03-26
+	@Column(name = "discount")
+	private Double discount = 0.0;
+	//Bhargav 20-03-26
 
+	
 	@PrePersist
 	public void prePersist() {
 		this.createdAt = LocalDateTime.now();
