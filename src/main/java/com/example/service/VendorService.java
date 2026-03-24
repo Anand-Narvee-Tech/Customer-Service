@@ -47,4 +47,6 @@ public interface VendorService {
 	public Map<String, Object> fetchVendorCountPerMonth(int year);
 
 	public Page<Vendor> getVendors(int page, int size, String sortField, String sortDir, String search, Long adminId);
+	
+	public List<Vendor> getVendorsByAdminId(Long adminId) ;
 }

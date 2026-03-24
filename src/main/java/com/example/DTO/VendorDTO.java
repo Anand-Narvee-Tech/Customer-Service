@@ -19,4 +19,6 @@ public class VendorDTO {
 	private VendorAddressDTO vendorAddress;
 	private String attentionTo;
 	private String additionDoc;
+    private String vendorType;
+
 }

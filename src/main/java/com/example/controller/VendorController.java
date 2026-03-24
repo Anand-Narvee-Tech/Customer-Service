@@ -2,6 +2,7 @@ package com.example.controller;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -149,7 +150,7 @@ public class VendorController {
 
 			return new VendorDTO(vendor.getVendorId(), vendor.getVendorName(), vendor.getEmail(),
 					vendor.getPhoneNumber(), vendor.getMsaAgreement(), vendor.getAddress(), vendor.getWebsite(), addr,
-					vendor.getAttentionTo(), vendor.getAdditionDoc());
+					vendor.getAttentionTo(), vendor.getAdditionDoc() ,vendor.getVendorType());
 		}).collect(Collectors.toList());
 
 		return ResponseEntity.ok(response);
@@ -313,5 +314,22 @@ public class VendorController {
 	        );
 	    }
 	}
+	
+	@GetMapping("/vendors/admin/{adminId}")
+	public ResponseEntity<?> getVendorsByAdminId(@PathVariable Long adminId) {
+
+	    List<Vendor> vendors = vendorServiceImpl.getVendorsByAdminId(adminId);
+
+	    Map<String, Object> data = new HashMap<>();
+	    data.put("vendors", vendors);
+
+	    Map<String, Object> response = new LinkedHashMap<>();
+	    response.put("status", "Success");
+	    response.put("message", "Vendors fetched successfully");
+	    response.put("data", data);
+
+	    return ResponseEntity.ok(response);
+	}
+	
 
 }

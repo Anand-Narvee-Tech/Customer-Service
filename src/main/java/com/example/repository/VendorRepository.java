@@ -92,4 +92,5 @@ public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecif
 			""", nativeQuery = true)
 	List<Object[]> getVendorCountPerMonth(@Param("year") int year);
 
+	 List<Vendor> findByAdminId(Long adminId);
 }
