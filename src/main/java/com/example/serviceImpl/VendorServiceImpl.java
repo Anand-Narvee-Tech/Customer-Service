@@ -269,6 +269,7 @@ public class VendorServiceImpl implements VendorService {
 		existingVendor.setAttentionTo(vendor.getAttentionTo());
 		existingVendor.setDiscount(vendor.getDiscount());
 		existingVendor.setAdminId(vendor.getAdminId());
+		existingVendor.setVendorType(vendor.getVendorType());
 
 		if (vendor.getVendorAddress() != null) {
 			existingVendor.setVendorAddress(vendor.getVendorAddress());
@@ -307,7 +308,7 @@ public class VendorServiceImpl implements VendorService {
 		dto.setVendorName(updatedVendor.getVendorName());
 		dto.setEmail(updatedVendor.getEmail());
 		dto.setPhoneNumber(updatedVendor.getPhoneNumber());
-	
+	    dto.setVendorType(updatedVendor.getVendorType());
 
 		if (updatedVendor.getVendorAddress() != null) {
 
@@ -547,6 +548,8 @@ public class VendorServiceImpl implements VendorService {
 			resolvedSortField = "vendorAddress.country";
 		} else if ("state".equalsIgnoreCase(sortField)) {
 			resolvedSortField = "vendorAddress.state";
+//		} else if ("vendorType".equalsIgnoreCase(sortField)) {
+//			resolvedSortField = "vendorAddress.vendorType";
 		}
 
 		final String finalSortField = resolvedSortField;
@@ -588,6 +591,7 @@ public class VendorServiceImpl implements VendorService {
 				searchPredicates.add(cb.like(cb.lower(root.get("gstin")), pattern));
 				searchPredicates.add(cb.like(cb.lower(root.get("website")), pattern));
 				searchPredicates.add(cb.like(cb.lower(root.get("address")), pattern));
+			//	searchPredicates.add(cb.like(cb.lower(root.get("vendorType")), pattern));
 				searchPredicates.add(cb.like(cb.lower(root.get("attentionTo")), pattern));
 
 				// Embedded address
@@ -615,4 +619,15 @@ public class VendorServiceImpl implements VendorService {
 	}
 //Bhargav Addedby 20/02/26
 
+	
+	@Override
+	public List<Vendor> getVendorsByAdminId(Long adminId) {
+
+		List<Vendor> vendors = vendorRepository.findByAdminId(adminId);
+
+		if (vendors.isEmpty()) {
+			throw new RuntimeException("No vendors found for AdminId: " + adminId);
+		}
+		return vendors;
+	}
 }

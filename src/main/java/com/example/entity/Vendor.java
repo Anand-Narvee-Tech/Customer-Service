@@ -77,7 +77,11 @@ public class Vendor {
 	//Bhargav 20-03-26
 	@Column(name = "discount")
 	private Double discount = 0.0;
-	//Bhargav 20-03-26
+	
+	@Column(name = "vendorType")
+	private String vendorType;
+	
+	//Bhargav 23-03-26
 
 	
 	@PrePersist
