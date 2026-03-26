@@ -36,30 +36,33 @@ public interface ConsultantRepository extends JpaRepository<Consultant, Long> {
 
     // Search only
     @Query("""
-        SELECT c FROM Consultant c
-        WHERE LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    """)
-    Page<Consultant> searchByKeyword(@Param("keyword") String keyword,
-                                     Pageable pageable);
-
+    	    SELECT c FROM Consultant c
+    	    WHERE LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	       OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	       OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	       OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	       OR LOWER(c.client) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	       OR CAST(c.billRate AS string) LIKE CONCAT('%', :keyword, '%')
+    	       OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	       OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	""")
+    	Page<Consultant> searchByKeyword(@Param("keyword") String keyword,
+    	                                 Pageable pageable);
 
     // Search + AdminId filter
     @Query("""
         SELECT c FROM Consultant c
         WHERE c.adminId = :adminId
         AND (
-            LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-         OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-         OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
-         OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
-         OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
-         OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        )
+			        LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+			     OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+			     OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+			     OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+			     OR LOWER(c.client) LIKE LOWER(CONCAT('%', :keyword, '%'))
+				 OR CAST(c.billRate AS string) LIKE CONCAT('%', :keyword, '%')
+			     OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
+			     OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
+			    )
     """)
     Page<Consultant> findByAdminIdAndKeyword(@Param("adminId") Long adminId,
                                              @Param("keyword") String keyword,
