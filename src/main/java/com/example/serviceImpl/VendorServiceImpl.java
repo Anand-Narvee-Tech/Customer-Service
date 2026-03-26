@@ -593,6 +593,10 @@ public class VendorServiceImpl implements VendorService {
 				searchPredicates.add(cb.like(cb.lower(root.get("address")), pattern));
 			//	searchPredicates.add(cb.like(cb.lower(root.get("vendorType")), pattern));
 				searchPredicates.add(cb.like(cb.lower(root.get("attentionTo")), pattern));
+				try {
+				    Double discountValue = Double.valueOf(search);
+				    searchPredicates.add(cb.equal(root.get("discount"), discountValue));
+				} catch (NumberFormatException ignored) {}				
 
 				// Embedded address
 				searchPredicates.add(cb.like(cb.lower(address.get("city")), pattern));

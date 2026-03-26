@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
@@ -81,28 +82,51 @@ public class ConsuantCon {
 
 	// ================= CREATE =================
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
-			@RequestPart(value = "file", required = false) MultipartFile file) {
+	public ResponseEntity<RestAPIResponse> createConsultant(
+	        @RequestPart("data") String dataJson,
+	        @RequestPart(value = "file", required = false) MultipartFile file) {
 
-		try {
+	    try {
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
-			ObjectMapper objectMapper = new ObjectMapper();
-			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+	        Consultant savedConsultant = consultantServ.save(data, file);
 
-			Consultant savedConsultant = consultantServ.save(data, file);
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
 
-			return ResponseEntity
-					.ok(new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+	    } catch (DataIntegrityViolationException ex) {
+	        // Handle DB constraint violations (like NetTerm)
+	        String message = ex.getMostSpecificCause().getMessage();
 
-		} catch (Exception ex) {
+	        if (message != null && message.contains("consultant_net_term_check")) {
+	            message = "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120";
+	        } else if (message != null && message.toLowerCase().contains("email")) {
+	            message = "This email already exists. Please use a different email.";
+	        } else {
+	            message = "Database constraint violation: " + message;
+	        }
 
-			ex.printStackTrace();
+	        return ResponseEntity.badRequest()
+	                .body(new RestAPIResponse("fail", message, null));
 
-			return ResponseEntity.status(HttpStatus.SC_BAD_REQUEST)
-					.body(new RestAPIResponse("fail", ex.getMessage(), null));
-		}
+	    } catch (IllegalArgumentException ex) {
+	        // Handle validation or not-found errors
+	        return ResponseEntity.badRequest()
+	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
+
+	    } catch (RuntimeException ex) {
+	        // All other runtime errors
+	        String message = ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred";
+	        return ResponseEntity.badRequest()
+	                .body(new RestAPIResponse("fail", message, null));
+
+	    } catch (Exception ex) {
+	        // Fallback for any unhandled exceptions
+	        return ResponseEntity.internalServerError()
+	                .body(new RestAPIResponse("fail", "Unable to create consultant. Please try again.", null));
+	    }
 	}
-
 	// ================= UPDATE =================
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> updateConsultant(@PathVariable("id") Long id,

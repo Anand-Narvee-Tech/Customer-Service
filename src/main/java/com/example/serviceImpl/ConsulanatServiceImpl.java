@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.DTO.ConsultantRequest;
+import com.example.DTO.NetTerm;
 import com.example.DTO.SearchRequest;
 import com.example.entity.Consultant;
 import com.example.entity.Vendor;
@@ -38,40 +39,56 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	@Override
 	public Consultant save(Consultant req, MultipartFile file) {
 
-		if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
-			throw new RuntimeException("Consultant already exists with this email");
-		}
+	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+	        throw new RuntimeException("Consultant already exists with this email");
+	    }
 
-		if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
-			throw new RuntimeException("Vendor ID is required");
-		}
+	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
+	        throw new RuntimeException("Vendor ID is required");
+	    }
 
-		Long vendorId = req.getVendor().getVendorId();
+	    // ================= NetTerm Validation =================
+	    if (req.getNetTerm() == null) {
+	        throw new RuntimeException(
+	            "Net Term is required. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120"
+	        );
+	    }
 
-		Vendor vendor = vendorRepository.findById(vendorId)
-				.orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+	    // Optional: validate against Enum just to be safe
+	    boolean valid = false;
+	    for (NetTerm n : NetTerm.values()) {
+	        if (n == req.getNetTerm()) {
+	            valid = true;
+	            break;
+	        }
+	    }
+	    if (!valid) {
+	        throw new RuntimeException(
+	            "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120"
+	        );
+	    }
 
-		// attach vendor
-		req.setVendor(vendor);
+	    Long vendorId = req.getVendor().getVendorId();
 
-		// File Upload
-		if (file != null && !file.isEmpty()) {
+	    Vendor vendor = vendorRepository.findById(vendorId)
+	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
 
-			long maxSize = 50 * 1024 * 1024;
+	    req.setVendor(vendor);
 
-			if (file.getSize() > maxSize) {
-				throw new RuntimeException("File size should not exceed 50MB");
-			}
+	    // File Upload
+	    if (file != null && !file.isEmpty()) {
+	        long maxSize = 50 * 1024 * 1024;
 
-			req.setDocumentPath(storeFile(file));
-		}
+	        if (file.getSize() > maxSize) {
+	            throw new RuntimeException("File size should not exceed 50MB");
+	        }
 
-		// 🔥 THIS WAS MISSING
-		Consultant savedConsultant = consultantRepository.save(req);
+	        req.setDocumentPath(storeFile(file));
+	    }
 
-		return savedConsultant;
+	    // old logic unchanged
+	    return consultantRepository.save(req);
 	}
-
 //	private String storeFile(MultipartFile file) {
 //
 //	    try {
