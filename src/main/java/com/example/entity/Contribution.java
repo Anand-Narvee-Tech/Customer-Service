@@ -24,7 +24,7 @@ public class Contribution {
     private Double amount;
 
     @Column(name = "amount_type")
-    private Double amountType;
+    private String amountType;
 
     @ManyToOne
     @JoinColumn(name = "consultant_id")
