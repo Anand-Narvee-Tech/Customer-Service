@@ -12,4 +12,6 @@ public class ConsultantRequestDTO {
     private String mobileNumber;
     private BigDecimal billRate;
     private Long vendorId;
+    
+    
 }

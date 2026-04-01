@@ -1,8 +1,5 @@
 package com.example.exception;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +10,7 @@ import com.example.DTO.RestAPIResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // ✅ Duplicate Vendor
     @ExceptionHandler(DuplicateVendorException.class)
     public ResponseEntity<RestAPIResponse> handleDuplicateVendor(DuplicateVendorException ex) {
         return ResponseEntity
@@ -20,31 +18,36 @@ public class GlobalExceptionHandler {
                 .body(new RestAPIResponse("error", ex.getMessage(), null));
     }
 
-    //  ADD THIS
+    // ✅ Illegal State
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<RestAPIResponse> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity
-                .status(HttpStatus.CONFLICT) // 409
+                .status(HttpStatus.CONFLICT)
                 .body(new RestAPIResponse("error", ex.getMessage(), null));
     }
 
-    //  Keep this LAST
+    // ✅ Resource Not Found
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<RestAPIResponse> handleNotFound(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(
+                new RestAPIResponse("FAIL", ex.getMessage(), null),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+    // ✅ Runtime Exception
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<RestAPIResponse> handleRuntime(RuntimeException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new RestAPIResponse("fail", ex.getMessage(), null));
+    }
+
+    // ✅ ONLY ONE General Exception (KEEP THIS)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RestAPIResponse> handleGeneral(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new RestAPIResponse("error", "Something went wrong!", null));
-    }
-    
-    
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
-
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", "error");
-        error.put("message", ex.getMessage());
-        error.put("data", null);
-
-        return ResponseEntity.badRequest().body(error);
     }
 }
