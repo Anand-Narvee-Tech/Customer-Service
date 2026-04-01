@@ -2,6 +2,7 @@ package com.example.DTO;
 
 import java.time.LocalDateTime;
 
+import com.example.entity.Contribution;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.Temporal;
@@ -48,4 +49,12 @@ public class RestAPIResponse {
 		this.status = status;
 		this.data = data;
 	}
+
+	   // ✅ ADD THIS ONLY
+    public RestAPIResponse(String status, String message, Object data, int pagesize) {
+        this();
+        this.status = status;
+        this.message = message;
+        this.data = data;
+    }
 }

@@ -31,4 +31,5 @@ public interface ConsulanatService {
 
 	public Optional<Consultant> deleteById(Long id);
 
+
 }

@@ -57,6 +57,13 @@ public class ConsuantCon {
 
 	@Autowired
 	private InvoiceFeignClient invoiceFeignClient;
+	
+    private final ObjectMapper objectMapper; // Spring-managed ObjectMapper
+
+    public ConsuantCon(ConsulanatService consultantServ, ObjectMapper objectMapper) {
+        this.consultantServ = consultantServ;
+        this.objectMapper = objectMapper;
+    }
 
 	// ================= CREATE =================
 //	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -80,7 +87,55 @@ public class ConsuantCon {
 //		}
 //	}
 
+//	working fine
 	// ================= CREATE =================
+//	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//	public ResponseEntity<RestAPIResponse> createConsultant(
+//	        @RequestPart("data") String dataJson,
+//	        @RequestPart(value = "file", required = false) MultipartFile file) {
+//
+//	    try {
+//	        ObjectMapper objectMapper = new ObjectMapper();
+//	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+//
+//	        Consultant savedConsultant = consultantServ.save(data, file);
+//
+//	        return ResponseEntity.ok(
+//	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+//
+//	    } catch (DataIntegrityViolationException ex) {
+//	        // Handle DB constraint violations (like NetTerm)
+//	        String message = ex.getMostSpecificCause().getMessage();
+//
+//	        if (message != null && message.contains("consultant_net_term_check")) {
+//	            message = "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120";
+//	        } else if (message != null && message.toLowerCase().contains("email")) {
+//	            message = "This email already exists. Please use a different email.";
+//	        } else {
+//	            message = "Database constraint violation: " + message;
+//	        }
+//
+//	        return ResponseEntity.badRequest()
+//	                .body(new RestAPIResponse("fail", message, null));
+//
+//	    } catch (IllegalArgumentException ex) {
+//	        // Handle validation or not-found errors
+//	        return ResponseEntity.badRequest()
+//	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
+//
+//	    } catch (RuntimeException ex) {
+//	        // All other runtime errors
+//	        String message = ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred";
+//	        return ResponseEntity.badRequest()
+//	                .body(new RestAPIResponse("fail", message, null));
+//
+//	    } catch (Exception ex) {
+//	        // Fallback for any unhandled exceptions
+//	        return ResponseEntity.internalServerError()
+//	                .body(new RestAPIResponse("fail", "Unable to create consultant. Please try again.", null));
+//	    }
+//	}
+	
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> createConsultant(
 	        @RequestPart("data") String dataJson,
@@ -88,6 +143,8 @@ public class ConsuantCon {
 
 	    try {
 	        ObjectMapper objectMapper = new ObjectMapper();
+	        objectMapper.findAndRegisterModules(); // ✅ Fix for LocalDate
+
 	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
 	        Consultant savedConsultant = consultantServ.save(data, file);
@@ -96,62 +153,81 @@ public class ConsuantCon {
 	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
 
 	    } catch (DataIntegrityViolationException ex) {
-	        // Handle DB constraint violations (like NetTerm)
-	        String message = ex.getMostSpecificCause().getMessage();
+
+	        String message = ex.getMostSpecificCause() != null
+	                ? ex.getMostSpecificCause().getMessage()
+	                : ex.getMessage();
 
 	        if (message != null && message.contains("consultant_net_term_check")) {
 	            message = "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120";
 	        } else if (message != null && message.toLowerCase().contains("email")) {
 	            message = "This email already exists. Please use a different email.";
+	        } else if (message != null && message.toLowerCase().contains("not-null")) {
+	            message = "Required field is missing. Please check your input.";
+	        } else if (message != null && message.toLowerCase().contains("foreign key")) {
+	            message = "Invalid reference data (Vendor or related entity not found).";
 	        } else {
-	            message = "Database constraint violation: " + message;
+	            message = "Database error: " + message;
 	        }
 
 	        return ResponseEntity.badRequest()
 	                .body(new RestAPIResponse("fail", message, null));
 
 	    } catch (IllegalArgumentException ex) {
-	        // Handle validation or not-found errors
+
 	        return ResponseEntity.badRequest()
 	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
 
 	    } catch (RuntimeException ex) {
-	        // All other runtime errors
-	        String message = ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred";
+
 	        return ResponseEntity.badRequest()
-	                .body(new RestAPIResponse("fail", message, null));
+	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
 
 	    } catch (Exception ex) {
-	        // Fallback for any unhandled exceptions
+
+	        ex.printStackTrace(); // ✅ for debugging
+
+	        String message = ex.getMessage();
+
+	        if (message == null || message.trim().isEmpty()) {
+	            message = "Unexpected error occurred while creating consultant";
+	        }
+
 	        return ResponseEntity.internalServerError()
-	                .body(new RestAPIResponse("fail", "Unable to create consultant. Please try again.", null));
+	                .body(new RestAPIResponse("fail", message, null));
 	    }
 	}
+	
+	
+	
+	
 	// ================= UPDATE =================
-	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> updateConsultant(@PathVariable("id") Long id,
-			@RequestPart("data") String dataJson, @RequestPart(value = "file", required = false) MultipartFile file) {
+	  @PutMapping("/{id}")
+	    public ResponseEntity<RestAPIResponse> updateConsultant(
+	            @PathVariable("id") Long id,
+	            @RequestPart("data") String dataJson,
+	            @RequestPart(value = "file", required = false) MultipartFile file) {
 
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			Consultant request = objectMapper.readValue(dataJson, Consultant.class);
+	        try {
+	            // Use Spring's ObjectMapper with JavaTimeModule
+	            Consultant request = objectMapper.readValue(dataJson, Consultant.class);
 
-			Consultant updatedConsultant = consultantServ.update(id, request, file);
+	            Consultant updatedConsultant = consultantServ.update(id, request, file);
 
-			return ResponseEntity
-					.ok(new RestAPIResponse("success", "Consultant updated successfully", updatedConsultant));
+	            return ResponseEntity.ok(
+	                    new RestAPIResponse("success", "Consultant updated successfully", updatedConsultant)
+	            );
 
-		} catch (IllegalArgumentException ex) {
-			ex.printStackTrace();
-			return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
+	        } catch (IllegalArgumentException ex) {
+	            ex.printStackTrace();
+	            return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
 
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return ResponseEntity.internalServerError()
-					.body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
-		}
-	}
-
+	        } catch (Exception ex) {
+	            ex.printStackTrace();
+	            return ResponseEntity.internalServerError()
+	                    .body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+	        }
+	    }
 	// ================= GET BY ID =================
 	@GetMapping("/getByID/{id}")
 	public ResponseEntity<RestAPIResponse> getConsultantById(@PathVariable("id") Long id) {
@@ -326,4 +402,8 @@ public class ConsuantCon {
 				.orElseThrow(() -> new RuntimeException("Consultant not found with id: " + id));
 	}
 
+	
+
+	
+	
 }
