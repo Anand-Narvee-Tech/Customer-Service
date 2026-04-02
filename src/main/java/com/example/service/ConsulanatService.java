@@ -14,13 +14,13 @@ import com.example.entity.Consultant;
 
 public interface ConsulanatService {
 
-	public Consultant save(Consultant req, MultipartFile file);
+	//public Consultant save(Consultant req, MultipartFile file);
 
 	public Consultant getById(Long cid);
 
 	// public Page<Consultant> getAllOrSearch(SearchRequest request);
 
-	public Consultant update(Long id, Consultant req, MultipartFile file);
+	//public Consultant update(Long id, Consultant req, MultipartFile file);
 
 	public void deactivate(Long cid);
 
@@ -31,6 +31,10 @@ public interface ConsulanatService {
 	Page<Consultant> getConsultants(String keyword, Long adminId, PageRequest pageable);
 
 	public Optional<Consultant> deleteById(Long id);
+	
+	Consultant save(Consultant req, MultipartFile file, MultipartFile w4Form, MultipartFile voidCheque);
 
+	
+	public Consultant update(Long id, Consultant req, MultipartFile file,MultipartFile w4Form, MultipartFile voidCheque);
 
 }

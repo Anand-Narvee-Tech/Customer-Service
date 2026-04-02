@@ -158,7 +158,7 @@ public class ConsuantCon {
 	        }
 
 	        // ✅ your existing logic (unchanged)
-	        Consultant savedConsultant = consultantServ.save(data, file);
+	        Consultant savedConsultant = consultantServ.save(data, file, w4Form, voidCheque);
 
 	        return ResponseEntity.ok(
 	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
@@ -234,7 +234,7 @@ public class ConsuantCon {
 	        }
 
 	        // ✅ existing logic (unchanged)
-	        Consultant updatedConsultant = consultantServ.update(id, request, file);
+	        Consultant updatedConsultant = consultantServ.update(id, request, file, w4Form, voidCheque);
 
 	        return ResponseEntity.ok(
 	                new RestAPIResponse("success", "Consultant updated successfully", updatedConsultant)
