@@ -96,9 +96,85 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 //	    return consultantRepository.save(req);
 //	}
 	
-	
+	//today
+//	@Override
+//	public Consultant save(Consultant req, MultipartFile file) {
+//
+//	    // ✅ Email validation
+//	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+//	        throw new RuntimeException("Consultant already exists with this email");
+//	    }
+//
+//	    // ✅ Vendor validation
+//	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
+//	        throw new RuntimeException("Vendor ID is required");
+//	    }
+//
+//	    // ✅ NetTerm validation
+//	    if (req.getNetTerm() == null) {
+//	        throw new RuntimeException(
+//	                "Net Term is required. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120"
+//	        );
+//	    }
+//
+//	    boolean valid = false;
+//	    for (NetTerm n : NetTerm.values()) {
+//	        if (n == req.getNetTerm()) {
+//	            valid = true;
+//	            break;
+//	        }
+//	    }
+//
+//	    if (!valid) {
+//	        throw new RuntimeException(
+//	                "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120"
+//	        );
+//	    }
+//
+//	    // ✅ Fetch Vendor
+//	    Long vendorId = req.getVendor().getVendorId();
+//
+//	    Vendor vendor = vendorRepository.findById(vendorId)
+//	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+//
+//	    req.setVendor(vendor);
+//
+//	    // ✅ File Upload
+//	    if (file != null && !file.isEmpty()) {
+//
+//	        long maxSize = 50 * 1024 * 1024;
+//
+//	        if (file.getSize() > maxSize) {
+//	            throw new RuntimeException("File size should not exceed 50MB");
+//	        }
+//
+//	        req.setDocumentPath(storeFile(file));
+//	    }
+//
+//	    // ✅ IMPORTANT FIX (Bank Accounts mapping)
+//	    if (req.getBankAccounts() != null && !req.getBankAccounts().isEmpty()) {
+//
+//	        req.getBankAccounts().forEach(bank -> {
+//
+//	            // 🔥 VERY IMPORTANT
+//	            bank.setConsultant(req);
+//
+//	            // ✅ Optional safety (avoid null DB errors)
+//	            if (bank.getAccountNumber() == null || bank.getAccountNumber().isEmpty()) {
+//	                throw new RuntimeException("Bank account number is required");
+//	            }
+//
+//	            if (bank.getBankName() == null || bank.getBankName().isEmpty()) {
+//	                throw new RuntimeException("Bank name is required");
+//	            }
+//	        });
+//	    }
+//
+//	    return consultantRepository.save(req);
+//	}
+//	
 	@Override
-	public Consultant save(Consultant req, MultipartFile file) {
+	public Consultant save(Consultant req, MultipartFile file, MultipartFile w4Form, MultipartFile voidCheque) {
 
 	    // ✅ Email validation
 	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
@@ -139,7 +215,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	    req.setVendor(vendor);
 
-	    // ✅ File Upload
+	    // ✅ File Upload (main file)
 	    if (file != null && !file.isEmpty()) {
 
 	        long maxSize = 50 * 1024 * 1024;
@@ -151,15 +227,23 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	        req.setDocumentPath(storeFile(file));
 	    }
 
-	    // ✅ IMPORTANT FIX (Bank Accounts mapping)
+	    // ✅ W4 Form
+	    if (w4Form != null && !w4Form.isEmpty()) {
+	        req.setW4Form(storeFile(w4Form));
+	    }
+
+	    // ✅ Void Cheque
+	    if (voidCheque != null && !voidCheque.isEmpty()) {
+	        req.setVoidCheque(storeFile(voidCheque));
+	    }
+
+	    // ✅ Bank Accounts mapping
 	    if (req.getBankAccounts() != null && !req.getBankAccounts().isEmpty()) {
 
 	        req.getBankAccounts().forEach(bank -> {
 
-	            // 🔥 VERY IMPORTANT
 	            bank.setConsultant(req);
 
-	            // ✅ Optional safety (avoid null DB errors)
 	            if (bank.getAccountNumber() == null || bank.getAccountNumber().isEmpty()) {
 	                throw new RuntimeException("Bank account number is required");
 	            }
@@ -172,6 +256,8 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	    return consultantRepository.save(req);
 	}
+	
+	
 	
 	
 	
@@ -261,7 +347,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 //vasim
 	@Override
-	public Consultant update(Long id, Consultant req, MultipartFile file) {
+	public Consultant update(Long id, Consultant req, MultipartFile file,MultipartFile w4Form, MultipartFile voidCheque) {
 
 		// ================= Fetch existing =================
 		Consultant existing = consultantRepository.findById(id)
@@ -411,10 +497,20 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	
 		//Bhargav-31-03-26
 	
-		// ================= File Upload =================
-		if (file != null && !file.isEmpty()) {
-			existing.setDocumentPath(storeFile(file));
-		}
+	 // ================= File Upload =================
+	    if (file != null && !file.isEmpty()) {
+	        existing.setDocumentPath(storeFile(file));
+	    }
+
+	    // ✅ ADD THIS (w4Form)
+	    if (w4Form != null && !w4Form.isEmpty()) {
+	        existing.setW4Form(storeFile(w4Form));
+	    }
+
+	    // ✅ ADD THIS (voidCheque)
+	    if (voidCheque != null && !voidCheque.isEmpty()) {
+	        existing.setVoidCheque(storeFile(voidCheque));
+	    }
 
 		// ================= Audit =================
 		existing.setUpdatedBy(getLoggedInUserId());
