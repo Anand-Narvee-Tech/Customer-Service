@@ -139,14 +139,25 @@ public class ConsuantCon {
 	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<RestAPIResponse> createConsultant(
 	        @RequestPart("data") String dataJson,
+	        @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
+	        @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque,
 	        @RequestPart(value = "file", required = false) MultipartFile file) {
-
 	    try {
 	        ObjectMapper objectMapper = new ObjectMapper();
-	        objectMapper.findAndRegisterModules(); // ✅ Fix for LocalDate
+	        objectMapper.findAndRegisterModules();
 
 	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
+	        // ✅ ADD THESE 2 LINES ONLY (no logic change)
+	        if (w4Form != null && !w4Form.isEmpty()) {
+	            data.setW4Form(w4Form.getOriginalFilename());
+	        }
+
+	        if (voidCheque != null && !voidCheque.isEmpty()) {
+	            data.setVoidCheque(voidCheque.getOriginalFilename());
+	        }
+
+	        // ✅ your existing logic (unchanged)
 	        Consultant savedConsultant = consultantServ.save(data, file);
 
 	        return ResponseEntity.ok(
@@ -202,32 +213,43 @@ public class ConsuantCon {
 	
 	
 	// ================= UPDATE =================
-	  @PutMapping("/{id}")
-	    public ResponseEntity<RestAPIResponse> updateConsultant(
-	            @PathVariable("id") Long id,
-	            @RequestPart("data") String dataJson,
-	            @RequestPart(value = "file", required = false) MultipartFile file) {
+	@PutMapping("/{id}")
+	public ResponseEntity<RestAPIResponse> updateConsultant(
+	        @PathVariable("id") Long id,
+	        @RequestPart("data") String dataJson,
+	        @RequestPart(value = "file", required = false) MultipartFile file,
+	        @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
+	        @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque) {
 
-	        try {
-	            // Use Spring's ObjectMapper with JavaTimeModule
-	            Consultant request = objectMapper.readValue(dataJson, Consultant.class);
+	    try {
+	        Consultant request = objectMapper.readValue(dataJson, Consultant.class);
 
-	            Consultant updatedConsultant = consultantServ.update(id, request, file);
-
-	            return ResponseEntity.ok(
-	                    new RestAPIResponse("success", "Consultant updated successfully", updatedConsultant)
-	            );
-
-	        } catch (IllegalArgumentException ex) {
-	            ex.printStackTrace();
-	            return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
-
-	        } catch (Exception ex) {
-	            ex.printStackTrace();
-	            return ResponseEntity.internalServerError()
-	                    .body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
+	        // ✅ ADD THESE (same as save API)
+	        if (w4Form != null && !w4Form.isEmpty()) {
+	            request.setW4Form(w4Form.getOriginalFilename());
 	        }
+
+	        if (voidCheque != null && !voidCheque.isEmpty()) {
+	            request.setVoidCheque(voidCheque.getOriginalFilename());
+	        }
+
+	        // ✅ existing logic (unchanged)
+	        Consultant updatedConsultant = consultantServ.update(id, request, file);
+
+	        return ResponseEntity.ok(
+	                new RestAPIResponse("success", "Consultant updated successfully", updatedConsultant)
+	        );
+
+	    } catch (IllegalArgumentException ex) {
+	        ex.printStackTrace();
+	        return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        return ResponseEntity.internalServerError()
+	                .body(new RestAPIResponse("fail", "Error: " + ex.getMessage(), null));
 	    }
+	}
 	// ================= GET BY ID =================
 	@GetMapping("/getByID/{id}")
 	public ResponseEntity<RestAPIResponse> getConsultantById(@PathVariable("id") Long id) {
