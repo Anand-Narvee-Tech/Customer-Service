@@ -11,9 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import com.example.DTO.ConsultantDTO;
 import com.example.DTO.EmploymentDTO;
+import com.example.DTO.EmploymentSortingRequestDTO;
 import com.example.DTO.VendorDTO;
 import com.example.entity.Consultant;
 import com.example.entity.Employments;
@@ -335,5 +340,55 @@ public class EmploymentServiceImpl implements EmploymentService {
 	    return dto;
 	}
     
+	
+	@Override
+	public Page<Employments> getEmploymentsByAdmin(EmploymentSortingRequestDTO requestDTO) {
+
+	    String search = requestDTO.getSearch();
+	    String sortBy = requestDTO.getSortField();
+	    String sortDir = requestDTO.getSortOrder();
+	    Integer pageNo = requestDTO.getPageNumber();
+	    Integer pageSize = requestDTO.getPageSize();
+	    Long adminId = requestDTO.getAdminId();
+
+	    // ✅ Default handling
+	    if (pageNo == null || pageNo < 0) pageNo = 0;
+	    int zeroBasedPageNo = (pageNo > 0) ? pageNo - 1 : pageNo;
+
+	    if (pageSize == null || pageSize <= 0) pageSize = 10;
+
+	    if (sortBy == null || sortBy.trim().isEmpty()) sortBy = "empId";
+	    if (sortDir == null || sortDir.trim().isEmpty()) sortDir = "desc";
+
+	    // ✅ Mapping (like invoice)
+	    switch (sortBy.toLowerCase()) {
+	        case "client": sortBy = "client"; break;
+	        case "worklocation": sortBy = "workLocation"; break;
+	        case "paymentfrequency": sortBy = "paymentFrequency"; break;
+	        case "billrate": sortBy = "billRate"; break;
+	        case "clienthiredate": sortBy = "clientHireDate"; break;
+	        case "projectstartdate": sortBy = "projectStartDate"; break;
+	        case "projectenddate": sortBy = "projectEndDate"; break;
+	        default: sortBy = "empId";
+	    }
+
+	    Sort.Direction direction = sortDir.equalsIgnoreCase("desc")
+	            ? Sort.Direction.DESC
+	            : Sort.Direction.ASC;
+
+	    Pageable pageable = PageRequest.of(zeroBasedPageNo, pageSize, Sort.by(direction, sortBy));
+
+	    boolean hasSearch = search != null && !search.trim().isEmpty();
+
+	    if (hasSearch) {
+	        return repo.searchEmploymentsByAdmin(
+	                adminId,
+	                search.toLowerCase().trim(),
+	                pageable
+	        );
+	    }
+
+	    return repo.findByAdminId(adminId, pageable);
+	}
     
 }

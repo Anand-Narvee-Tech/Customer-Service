@@ -3,10 +3,12 @@ package com.example.service;
 import java.util.List;
 
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.DTO.EmploymentDTO;
+import com.example.DTO.EmploymentSortingRequestDTO;
 import com.example.entity.Employments;
 
 public interface EmploymentService {
@@ -25,6 +27,9 @@ public interface EmploymentService {
 	public Resource getPoFile(Long id);
 
 	public Resource getPoFile(String fileName);
+	
+	public Page<Employments> getEmploymentsByAdmin(EmploymentSortingRequestDTO requestDTO);
+
 	
 	public EmploymentDTO mapToDTO(Employments emp);
 }

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.DTO.EmploymentDTO;
+import com.example.DTO.EmploymentSortingRequestDTO;
 import com.example.common.RestAPIResponse;
 import com.example.entity.Employments;
 import com.example.service.EmploymentService;
@@ -170,5 +172,21 @@ public class EmploymentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "inline; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
+    }
+    
+    @PostMapping("/emps/searchAndSorting")
+    public ResponseEntity<RestAPIResponse> getEmploymentsByAdmin(
+            @RequestBody EmploymentSortingRequestDTO requestDTO) {
+
+        Page<Employments> employments =
+        		service.getEmploymentsByAdmin(requestDTO);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse(
+                        "Success",
+                        "Employments fetched successfully",
+                        employments.getContent()
+                )
+        );
     }
 }
