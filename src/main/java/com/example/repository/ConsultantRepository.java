@@ -24,50 +24,48 @@ public interface ConsultantRepository extends JpaRepository<Consultant, Long> {
 
 	boolean existsByCid(String cid);
 
-	List<Consultant> findByVendor_VendorId(Long vendorId);
+	//List<Consultant> findByVendor_VendorId(Long vendorId);
+	
+	List<Consultant> findByVendors_VendorId(Long vendorId);
 
 	Page<Consultant> findAll(Pageable pageable);
 
 //bhargav 21/02/26
 	
-	
+	@Query("""
+		    SELECT c FROM Consultant c
+		    WHERE LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+		       OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+		       OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+		       OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+		       OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
+		       OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
+		""")
+		Page<Consultant> searchByKeyword(String keyword, Pageable pageable);
 
     Page<Consultant> findByAdminId(Long adminId, Pageable pageable);
-
-    // Search only
-    @Query("""
-    	    SELECT c FROM Consultant c
-    	    WHERE LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	       OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	       OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	       OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	       OR LOWER(c.client) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	       OR CAST(c.billRate AS string) LIKE CONCAT('%', :keyword, '%')
-    	       OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	       OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    	""")
-    	Page<Consultant> searchByKeyword(@Param("keyword") String keyword,
-    	                                 Pageable pageable);
-
+    
     // Search + AdminId filter
     @Query("""
-        SELECT c FROM Consultant c
-        WHERE c.adminId = :adminId
-        AND (
-			        LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-			     OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-			     OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
-			     OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
-			     OR LOWER(c.client) LIKE LOWER(CONCAT('%', :keyword, '%'))
-				 OR CAST(c.billRate AS string) LIKE CONCAT('%', :keyword, '%')
-			     OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
-			     OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
-			    )
-    """)
-    Page<Consultant> findByAdminIdAndKeyword(@Param("adminId") Long adminId,
-                                             @Param("keyword") String keyword,
-                                             Pageable pageable);
-	
+    		SELECT c FROM Consultant c
+    		WHERE c.adminId = :adminId
+    		AND (
+    		   LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.personalEmail) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.cid) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.status) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.city) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.state) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.country) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		   OR LOWER(c.visaType) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    		)
+    		""")
+    		Page<Consultant> findByAdminIdAndKeyword(Long adminId, String keyword, Pageable pageable);
+    
 //bhargav 21/02/26
-
+    @Query("SELECT c FROM Consultant c LEFT JOIN FETCH c.employments e LEFT JOIN FETCH e.vendor WHERE c.id = :id")
+    Optional<Consultant> findByIdWithVendor(@Param("id") Long id);
 }

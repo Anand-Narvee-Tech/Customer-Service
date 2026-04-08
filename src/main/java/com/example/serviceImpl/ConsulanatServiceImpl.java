@@ -5,27 +5,36 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.DTO.ConsultantRequest;
+import com.example.DTO.ConsultantBankAccountDTO;
+import com.example.DTO.ConsultantDTO;
+import com.example.DTO.ConsultantRequestDTO;
+import com.example.DTO.ContributionDTO;
+import com.example.DTO.EmploymentDTO;
 import com.example.DTO.NetTerm;
-import com.example.DTO.SearchRequest;
+import com.example.DTO.VendorDTO;
 import com.example.entity.Consultant;
 import com.example.entity.Vendor;
 import com.example.repository.ConsultantRepository;
 import com.example.repository.VendorRepository;
 import com.example.service.ConsulanatService;
+
+import jakarta.ws.rs.core.HttpHeaders;
+
 
 @Service
 public class ConsulanatServiceImpl implements ConsulanatService {
@@ -174,7 +183,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 //	}
 //	
 	@Override
-	public Consultant save(Consultant req, MultipartFile file, MultipartFile w4Form, MultipartFile voidCheque) {
+	public Consultant save(Consultant req, MultipartFile w4Form, MultipartFile voidCheque) {
 
 	    // ✅ Email validation
 	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
@@ -182,62 +191,52 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	    }
 
 	    // ✅ Vendor validation
-	    if (req.getVendor() == null || req.getVendor().getVendorId() == null) {
-	        throw new RuntimeException("Vendor ID is required");
+	    if (req.getVendors() == null || req.getVendors().isEmpty()) {
+	        throw new RuntimeException("At least one vendor is required");
 	    }
 
-	    // ✅ NetTerm validation
-	    if (req.getNetTerm() == null) {
-	        throw new RuntimeException(
-	                "Net Term is required. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120"
-	        );
-	    }
+	    // ================= MULTIPLE VENDORS =================
+	    List<Vendor> vendorList = new ArrayList<>();
 
-	    boolean valid = false;
-	    for (NetTerm n : NetTerm.values()) {
-	        if (n == req.getNetTerm()) {
-	            valid = true;
-	            break;
-	        }
-	    }
+	    for (Vendor v : req.getVendors()) {
 
-	    if (!valid) {
-	        throw new RuntimeException(
-	                "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120"
-	        );
-	    }
-
-	    // ✅ Fetch Vendor
-	    Long vendorId = req.getVendor().getVendorId();
-
-	    Vendor vendor = vendorRepository.findById(vendorId)
-	            .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
-
-	    req.setVendor(vendor);
-
-	    // ✅ File Upload (main file)
-	    if (file != null && !file.isEmpty()) {
-
-	        long maxSize = 50 * 1024 * 1024;
-
-	        if (file.getSize() > maxSize) {
-	            throw new RuntimeException("File size should not exceed 50MB");
+	        if (v.getVendorId() == null) {
+	            throw new RuntimeException("Vendor ID is required");
 	        }
 
-	        req.setDocumentPath(storeFile(file));
+	        Vendor vendorObj = vendorRepository.findById(v.getVendorId())
+	                .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + v.getVendorId()));
+
+	        vendorList.add(vendorObj);
 	    }
 
-	    // ✅ W4 Form
+	    req.setVendors(vendorList);
+
+	    // ================= FILE UPLOAD =================
+
+	    long maxSize = 50 * 1024 * 1024;
+
+	    // ✅ W4 Form (FIXED - only once)
 	    if (w4Form != null && !w4Form.isEmpty()) {
+
+	        if (w4Form.getSize() > maxSize) {
+	            throw new RuntimeException("W4 file size should not exceed 50MB");
+	        }
+
 	        req.setW4Form(storeFile(w4Form));
 	    }
 
-	    // ✅ Void Cheque
+	    // ✅ Void Cheque (ADDED VALIDATION)
 	    if (voidCheque != null && !voidCheque.isEmpty()) {
+
+	        if (voidCheque.getSize() > maxSize) {
+	            throw new RuntimeException("Void Cheque file size should not exceed 50MB");
+	        }
+
 	        req.setVoidCheque(storeFile(voidCheque));
 	    }
 
-	    // ✅ Bank Accounts mapping
+	    // ================= BANK ACCOUNTS =================
 	    if (req.getBankAccounts() != null && !req.getBankAccounts().isEmpty()) {
 
 	        req.getBankAccounts().forEach(bank -> {
@@ -256,10 +255,6 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	    return consultantRepository.save(req);
 	}
-	
-	
-	
-	
 	
 //	private String storeFile(MultipartFile file) {
 //
@@ -347,7 +342,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 //vasim
 	@Override
-	public Consultant update(Long id, Consultant req, MultipartFile file,MultipartFile w4Form, MultipartFile voidCheque) {
+	public Consultant update(Long id, Consultant req,MultipartFile w4Form, MultipartFile voidCheque) {
 
 		// ================= Fetch existing =================
 		Consultant existing = consultantRepository.findById(id)
@@ -373,20 +368,8 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		if (req.getMobileNumber() != null)
 			existing.setMobileNumber(req.getMobileNumber());
 
-		if (req.getBillRate() != null)
-			existing.setBillRate(req.getBillRate());
-
 		if (req.getStatus() != null)
 			existing.setStatus(req.getStatus());
-
-		if (req.getNetTerm() != null)
-			existing.setNetTerm(req.getNetTerm());
-
-		if (req.getClient() != null)
-			existing.setClient(req.getClient());
-
-		if (req.getInvoiceMail() != null)
-			existing.setInvoiceMail(req.getInvoiceMail());
 
 		// ================= Address =================
 		if (req.getAddress() != null)
@@ -429,12 +412,6 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		if (req.getHireDate() != null)
 		    existing.setHireDate(req.getHireDate());
 
-		if (req.getClienthireDate() != null)
-		    existing.setClienthireDate(req.getClienthireDate());
-
-		if (req.getWorkLocation() != null)
-		    existing.setWorkLocation(req.getWorkLocation());
-
 		if (req.getAlternateNumber() != null)
 		    existing.setAlternateNumber(req.getAlternateNumber());
 
@@ -453,25 +430,25 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 		if (req.getVoidCheque() != null)
 		    existing.setVoidCheque(req.getVoidCheque());
+		
+		// ================= Vendor (UPDATED FIX) =================
+		if (req.getVendors() != null && !req.getVendors().isEmpty()) {
 
-		// ================= Project / Payment =================
-		if (req.getPaymentFrequency() != null)
-		    existing.setPaymentFrequency(req.getPaymentFrequency());
+		    List<Vendor> vendorList = new ArrayList<>();
 
-		if (req.getProjectStartDate() != null)
-		    existing.setProjectStartDate(req.getProjectStartDate());
+		    for (Vendor v : req.getVendors()) {
 
-		if (req.getProjectEndDate() != null)
-		    existing.setProjectEndDate(req.getProjectEndDate());
-		// ================= Vendor =================
-		if (req.getVendor() != null && req.getVendor().getVendorId() != null) {
+		        if (v.getVendorId() == null) {
+		            throw new IllegalArgumentException("Vendor ID is required");
+		        }
 
-			Long vendorId = req.getVendor().getVendorId();
+		        Vendor vendor = vendorRepository.findById(v.getVendorId())
+		                .orElseThrow(() -> new IllegalArgumentException("Vendor not found with id: " + v.getVendorId()));
 
-			Vendor vendor = vendorRepository.findById(vendorId)
-					.orElseThrow(() -> new IllegalArgumentException("Vendor not found with id: " + vendorId));
+		        vendorList.add(vendor);
+		    }
 
-			existing.setVendor(vendor);
+		    existing.setVendors(vendorList);
 		}
 
 		//Bhargav-31-03-26
@@ -494,13 +471,21 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	            existing.getContributions().add(contribution);
 	        });
 	    }
+	    
+	    // ================= EMPLOYMENTS  =================
+	    if (req.getEmployments() != null) {
+	        // Clear old contributions and add updated ones
+	        existing.getEmployments().clear();
+	        req.getEmployments().forEach(employment -> {
+	        	employment.setConsultant(existing); // set back-reference if bi-directional
+	            existing.getEmployments().add(employment);
+	        });
+	    }
 	
 		//Bhargav-31-03-26
 	
 	 // ================= File Upload =================
-	    if (file != null && !file.isEmpty()) {
-	        existing.setDocumentPath(storeFile(file));
-	    }
+	  
 
 	    // ✅ ADD THIS (w4Form)
 	    if (w4Form != null && !w4Form.isEmpty()) {
@@ -511,6 +496,8 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	    if (voidCheque != null && !voidCheque.isEmpty()) {
 	        existing.setVoidCheque(storeFile(voidCheque));
 	    }
+	    
+	 
 
 		// ================= Audit =================
 		existing.setUpdatedBy(getLoggedInUserId());
@@ -579,7 +566,7 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 			throw new RuntimeException("Vendor not found with id: " + vendorId);
 		}
 
-		return consultantRepository.findByVendor_VendorId(vendorId);
+		return consultantRepository.findByVendors_VendorId(vendorId);
 	}
 
 	@Override
@@ -594,22 +581,222 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 		Consultant consultant = consultantOpt.get();
 
 		// Delete file if exists
-		if (consultant.getDocumentPath() != null) {
+		if (consultant.getW4Form() != null) {
 			try {
-				java.nio.file.Path path = java.nio.file.Paths.get(consultant.getDocumentPath());
+				java.nio.file.Path path = java.nio.file.Paths.get(consultant.getW4Form());
 				java.nio.file.Files.deleteIfExists(path);
 			} catch (Exception e) {
 				System.out.println("File delete failed: " + e.getMessage());
 			}
 		}
+		
+		// Delete file if exists
+				if (consultant.getVoidCheque() != null) {
+					try {
+						java.nio.file.Path path = java.nio.file.Paths.get(consultant.getVoidCheque());
+						java.nio.file.Files.deleteIfExists(path);
+					} catch (Exception e) {
+						System.out.println("File delete failed: " + e.getMessage());
+					}
+				}
 
 		consultantRepository.delete(consultant);
 
 		return Optional.of(consultant);
 	}
 
-	
 
+	@Override
+	public ResponseEntity<Resource> previewFile(Long adminId, Long consultantId,
+	        String type) {
+
+	    try {
+	        // Fetch consultant
+	        Consultant consultant = consultantRepository.findById(consultantId)
+	                .orElseThrow(() -> new RuntimeException("Consultant not found"));
+
+	        // Admin validation
+	        if (!consultant.getAdminId().equals(adminId)) {
+	            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+	        }
+
+	        // Map file type to corresponding consultant field
+	        String filePath = switch (type.toLowerCase()) {
+	            case "w4" -> consultant.getW4Form();
+	            case "void" -> consultant.getVoidCheque();
+	            default -> null;
+	        };
+
+	        // Check if file exists
+	        if (filePath == null || filePath.trim().isEmpty()) {
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+	                    .body(null);
+	        }
+
+	        // Resolve paths
+	        Path basePath = Paths.get("uploads").toAbsolutePath().normalize();
+	        Path path = Paths.get(filePath).toAbsolutePath().normalize();
+
+	        // Security check to prevent path traversal
+	        if (!path.startsWith(basePath)) {
+	            return ResponseEntity.badRequest().build();
+	        }
+
+	        Resource resource = new UrlResource(path.toUri());
+
+	        if (!resource.exists() || !resource.isReadable()) {
+	            return ResponseEntity.notFound().build();
+	        }
+
+	        // Detect content type dynamically
+	        String contentType = Files.probeContentType(path);
+	        if (contentType == null) {
+	            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+	        }
+
+	        return ResponseEntity.ok()
+	                .contentType(MediaType.parseMediaType(contentType))
+	                .header(HttpHeaders.CONTENT_DISPOSITION,
+	                        "inline; filename=\"" + resource.getFilename() + "\"")
+	                .body(resource);
+
+	    } catch (Exception e) {
+	        throw new RuntimeException("Error while previewing file: " + e.getMessage());
+	    }
+	}
+	
+	@Override
+	public ConsultantRequestDTO mapToDTO(Consultant consultant) {
+
+	    ConsultantRequestDTO dto = new ConsultantRequestDTO();
+
+	    // ================= ✅ CONSULTANT =================
+	    ConsultantDTO basic = new ConsultantDTO();
+
+	    basic.setId(consultant.getId());
+	    basic.setCid(consultant.getCid());
+	    basic.setFirstName(consultant.getFirstName());
+	    basic.setLastName(consultant.getLastName());
+	    basic.setDateOfBirth(consultant.getDateOfBirth() != null ? consultant.getDateOfBirth().toString() : null);
+	    basic.setGender(consultant.getGender());
+	    basic.setMaritalStatus(consultant.getMaritalStatus());
+	    basic.setNumberOfChildren(consultant.getNumberOfChildren());
+	    basic.setSecurityNumber(consultant.getSecurityNumber());
+	    basic.setPersonalEmail(consultant.getPersonalEmail());
+	    basic.setEmail(consultant.getEmail());
+	    basic.setMobileNumber(consultant.getMobileNumber());
+	    basic.setAlternateNumber(consultant.getAlternateNumber());
+	    basic.setAddress(consultant.getAddress());
+	    basic.setW4Form(consultant.getW4Form());
+	    basic.setVoidCheque(consultant.getVoidCheque());
+	    basic.setSuite(consultant.getSuite());
+	    basic.setCity(consultant.getCity());
+	    basic.setState(consultant.getState());
+	    basic.setCountry(consultant.getCountry());
+	    basic.setPincode(consultant.getPincode());
+	    basic.setHireDate(consultant.getHireDate() != null ? consultant.getHireDate().toString() : null);
+	    basic.setVisaType(consultant.getVisaType());
+	    basic.setVisaStartDate(consultant.getVisaStartDate() != null ? consultant.getVisaStartDate().toString() : null);
+	    basic.setVisaEndDate(consultant.getVisaEndDate() != null ? consultant.getVisaEndDate().toString() : null);
+
+	    dto.setConsultant(basic);
+
+	    // ================= ✅ BANK =================
+	    if (consultant.getBankAccounts() != null) {
+	        List<ConsultantBankAccountDTO> bankList = consultant.getBankAccounts()
+	                .stream()
+	                .map(b -> {
+	                    ConsultantBankAccountDTO bdto = new ConsultantBankAccountDTO();
+	                    bdto.setBankName(b.getBankName());
+	                    bdto.setAccountHolderName(b.getAccountHolderName());
+	                    bdto.setRoutingNumber(b.getRoutingNumber());
+	                    bdto.setAccountType(b.getAccountType());
+	                    bdto.setId(b.getId());
+	                    bdto.setAccountNumber(b.getAccountNumber());  // ✅ ADD THIS
+	                    bdto.setIfscCode(b.getIfscCode());            // ✅ ADD THIS
+	                    return bdto;
+	                })
+	                .toList();
+
+	        dto.setBankAccounts(bankList);
+	    }
+
+	    // ================= ✅ CONTRIBUTIONS =================
+	    if (consultant.getContributions() != null) {
+	        List<ContributionDTO> contList = consultant.getContributions()
+	                .stream()
+	                .map(c -> {
+	                    ContributionDTO cdto = new ContributionDTO();
+	                    cdto.setContributionId(c.getContributionId());
+	                    cdto.setOtherContribution(c.getOtherContribution());
+	                    cdto.setContributionType(c.getContributionType());
+	                    cdto.setAmount(c.getAmount());
+	                    cdto.setAmountType(c.getAmountType());
+	                    return cdto;
+	                })
+	                .toList();
+
+	        dto.setContributions(contList);
+	    }
+
+	    // ================= ✅ EMPLOYMENTS =================
+	    if (consultant.getEmployments() != null) {
+	        List<EmploymentDTO> empList = consultant.getEmployments()
+	                .stream()
+	                .map(e -> {
+	                    EmploymentDTO edto = new EmploymentDTO();
+
+	                    edto.setWorkLocation(e.getWorkLocation());
+	                    edto.setClientHireDate(e.getClientHireDate());
+	                    edto.setProjectStartDate(e.getProjectStartDate());
+	                    edto.setProjectEndDate(e.getProjectEndDate());
+	                    edto.setClient(e.getClient());
+	                    edto.setInvoiceMail(e.getInvoiceMail());
+	                    edto.setNetTerm(e.getNetTerm() != null ? e.getNetTerm().name() : null);
+	                    edto.setPaymentFrequency(e.getPaymentFrequency());
+	                    edto.setBillRate(e.getBillRate());
+	                    edto.setPoUpload(e.getPoUpload());
+
+	                    // ================= ✅ FIXED VENDOR MAPPING =================
+	                    if (e.getVendor() != null) {
+
+	                        Vendor fullVendor = vendorRepository
+	                                .findById(e.getVendor().getVendorId())
+	                                .orElse(null);
+
+	                        if (fullVendor != null) {
+	                            VendorDTO vdto = new VendorDTO();
+
+	                            vdto.setVendorId(fullVendor.getVendorId());
+	                            vdto.setVendorName(fullVendor.getVendorName());
+	                            vdto.setEmail(fullVendor.getEmail());
+	                            vdto.setPhoneNumber(fullVendor.getPhoneNumber());
+	                            vdto.setEinNumber(fullVendor.getEinNumber());
+	                            vdto.setCreatedAt(fullVendor.getCreatedAt());
+	                            vdto.setGstin(fullVendor.getGstin());
+	                            vdto.setMsaAgreement(fullVendor.getMsaAgreement());
+	                            vdto.setAddress(fullVendor.getAddress());
+	                            vdto.setWebsite(fullVendor.getWebsite());
+	                            vdto.setAdminId(fullVendor.getAdminId());
+	                            vdto.setAttentionTo(fullVendor.getAttentionTo());
+	                            vdto.setAdditionDoc(fullVendor.getAdditionDoc());
+	                            vdto.setDiscount(fullVendor.getDiscount());
+	                            vdto.setVendorType(fullVendor.getVendorType());
+
+	                            edto.setVendor(vdto);
+	                        }
+	                    }
+
+	                    return edto;
+	                })
+	                .toList();
+
+	        dto.setEmployments(empList);
+	    }
+
+	    return dto;
+	}
+	
 //	@Override
 //	public Consultant save(Consultant req, MultipartFile file) {
 //
@@ -644,5 +831,8 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 //
 //		
 //	}
+	
+	
+	
 
 }

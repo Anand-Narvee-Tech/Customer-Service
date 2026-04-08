@@ -1,5 +1,6 @@
 package com.example.service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,8 +8,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.DTO.ConsultantRequest;
+import com.example.DTO.ConsultantRequestDTO;
 import com.example.DTO.SearchRequest;
 import com.example.entity.Consultant;
 
@@ -32,9 +35,16 @@ public interface ConsulanatService {
 
 	public Optional<Consultant> deleteById(Long id);
 	
-	Consultant save(Consultant req, MultipartFile file, MultipartFile w4Form, MultipartFile voidCheque);
+	Consultant save(Consultant req, MultipartFile w4Form, MultipartFile voidCheque);
 
 	
-	public Consultant update(Long id, Consultant req, MultipartFile file,MultipartFile w4Form, MultipartFile voidCheque);
+	public Consultant update(Long id, Consultant req,MultipartFile w4Form, MultipartFile voidCheque);
 
+	
+	public  ConsultantRequestDTO mapToDTO(Consultant consultant);
+
+	public ResponseEntity<Resource> previewFile(Long adminId, Long consultantId, String type);
+
+
+	
 }

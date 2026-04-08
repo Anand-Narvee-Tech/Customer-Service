@@ -2,8 +2,10 @@
 package com.example.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.example.DTO.VendorAddress;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -11,6 +13,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -81,7 +84,13 @@ public class Vendor {
 	@Column(name = "vendorType")
 	private String vendorType;
 	
+	
+	@ManyToMany(mappedBy = "vendors")
+	@JsonIgnore
+	private List<Consultant> consultants;
+	
 	//Bhargav 23-03-26
+
 
 	
 	@PrePersist
