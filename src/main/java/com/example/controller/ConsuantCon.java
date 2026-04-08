@@ -20,7 +20,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.apache.hc.core5.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +29,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import com.example.DTO.ConsultantRequestDTO;
 import com.example.DTO.NetTerm;
 import com.example.DTO.RestAPIResponse;
@@ -136,88 +135,69 @@ public class ConsuantCon {
 //	    }
 //	}
 	
-	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RestAPIResponse> createConsultant(
-	        @RequestPart("data") String dataJson,
-	        @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
-	        @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque,
-	        @RequestPart(value = "file", required = false) MultipartFile file) {
-	    try {
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        objectMapper.findAndRegisterModules();
+    @PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RestAPIResponse> createConsultant(
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
+            @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.findAndRegisterModules();
 
-	        Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+            Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
-	        // ✅ ADD THESE 2 LINES ONLY (no logic change)
-	        if (w4Form != null && !w4Form.isEmpty()) {
-	            data.setW4Form(w4Form.getOriginalFilename());
-	        }
+            // ✅ kept as-is
+            if (w4Form != null && !w4Form.isEmpty()) {
+                data.setW4Form(w4Form.getOriginalFilename());
+            }
 
-	        if (voidCheque != null && !voidCheque.isEmpty()) {
-	            data.setVoidCheque(voidCheque.getOriginalFilename());
-	        }
+            if (voidCheque != null && !voidCheque.isEmpty()) {
+                data.setVoidCheque(voidCheque.getOriginalFilename());
+            }
 
-	        // ✅ your existing logic (unchanged)
-	        Consultant savedConsultant = consultantServ.save(data, file, w4Form, voidCheque);
+            Consultant savedConsultant = consultantServ.save(data, w4Form, voidCheque);
 
-	        return ResponseEntity.ok(
-	                new RestAPIResponse("success", "Consultant created successfully", savedConsultant));
+            ConsultantRequestDTO response =consultantServ.mapToDTO(savedConsultant);
 
-	    } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.ok(
+                    new RestAPIResponse("success", "Consultant created successfully", response));
 
-	        String message = ex.getMostSpecificCause() != null
-	                ? ex.getMostSpecificCause().getMessage()
-	                : ex.getMessage();
+        } catch (DataIntegrityViolationException ex) {
 
-	        if (message != null && message.contains("consultant_net_term_check")) {
-	            message = "Invalid Net Term. Allowed values: NET_7, NET_14, NET_30, NET_45, NET_60, NET_75, NET_120";
-	        } else if (message != null && message.toLowerCase().contains("email")) {
-	            message = "This email already exists. Please use a different email.";
-	        } else if (message != null && message.toLowerCase().contains("not-null")) {
-	            message = "Required field is missing. Please check your input.";
-	        } else if (message != null && message.toLowerCase().contains("foreign key")) {
-	            message = "Invalid reference data (Vendor or related entity not found).";
-	        } else {
-	            message = "Database error: " + message;
-	        }
+            String message = ex.getMostSpecificCause() != null
+                    ? ex.getMostSpecificCause().getMessage()
+                    : ex.getMessage();
 
-	        return ResponseEntity.badRequest()
-	                .body(new RestAPIResponse("fail", message, null));
+            if (message != null && message.toLowerCase().contains("email")) {
+                message = "This email already exists. Please use a different email.";
+            } else if (message != null && message.toLowerCase().contains("not-null")) {
+                message = "Required field is missing. Please check your input.";
+            } else if (message != null && message.toLowerCase().contains("foreign key")) {
+                message = "Invalid reference data (Vendor or related entity not found).";
+            } else {
+                message = "Database error: " + message;
+            }
 
-	    } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest()
+                    .body(new RestAPIResponse("fail", message, null));
 
-	        return ResponseEntity.badRequest()
-	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
+        } catch (Exception ex) {
+            ex.printStackTrace();
 
-	    } catch (RuntimeException ex) {
+            String message = ex.getMessage();
+            if (message == null || message.trim().isEmpty()) {
+                message = "Unexpected error occurred while creating consultant";
+            }
 
-	        return ResponseEntity.badRequest()
-	                .body(new RestAPIResponse("fail", ex.getMessage(), null));
-
-	    } catch (Exception ex) {
-
-	        ex.printStackTrace(); // ✅ for debugging
-
-	        String message = ex.getMessage();
-
-	        if (message == null || message.trim().isEmpty()) {
-	            message = "Unexpected error occurred while creating consultant";
-	        }
-
-	        return ResponseEntity.internalServerError()
-	                .body(new RestAPIResponse("fail", message, null));
-	    }
-	}
-	
-	
-	
-	
+            return ResponseEntity.internalServerError()
+                    .body(new RestAPIResponse("fail", message, null));
+        }
+    }
 	// ================= UPDATE =================
 	@PutMapping("/{id}")
 	public ResponseEntity<RestAPIResponse> updateConsultant(
 	        @PathVariable("id") Long id,
 	        @RequestPart("data") String dataJson,
-	        @RequestPart(value = "file", required = false) MultipartFile file,
 	        @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
 	        @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque) {
 
@@ -232,14 +212,14 @@ public class ConsuantCon {
 	        if (voidCheque != null && !voidCheque.isEmpty()) {
 	            request.setVoidCheque(voidCheque.getOriginalFilename());
 	        }
+	        Consultant updatedConsultant = consultantServ.update(id, request, w4Form, voidCheque);
 
-	        // ✅ existing logic (unchanged)
-	        Consultant updatedConsultant = consultantServ.update(id, request, file, w4Form, voidCheque);
+	        ConsultantRequestDTO response = consultantServ.mapToDTO(updatedConsultant);
 
 	        return ResponseEntity.ok(
-	                new RestAPIResponse("success", "Consultant updated successfully", updatedConsultant)
+	                new RestAPIResponse("success", "Consultant updated successfully", response)
 	        );
-
+	        
 	    } catch (IllegalArgumentException ex) {
 	        ex.printStackTrace();
 	        return ResponseEntity.badRequest().body(new RestAPIResponse("fail", ex.getMessage(), null));
@@ -425,7 +405,14 @@ public class ConsuantCon {
 	}
 
 	
-
+	// Controller
+	@GetMapping("/preview-file")
+	public ResponseEntity<Resource> previewFile(
+	        @RequestParam Long adminId,
+	        @RequestParam Long consultantId,
+	        @RequestParam String type) throws IOException {
+	    return consultantServ.previewFile(adminId, consultantId, type);
+	}
 	
 	
 }

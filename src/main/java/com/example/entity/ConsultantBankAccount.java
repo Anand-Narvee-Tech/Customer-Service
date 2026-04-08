@@ -24,6 +24,7 @@ public class ConsultantBankAccount {
     private String bankName;
     private String accountNumber;
     private String routingNumber;
+    private String accountType;
     private String  ifscCode;
 
     @ManyToOne

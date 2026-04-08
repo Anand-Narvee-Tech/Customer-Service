@@ -141,19 +141,48 @@ public class VendorController {
 
 	@GetMapping("/by-name")
 	public ResponseEntity<List<VendorDTO>> searchVendors(@RequestParam("name") String name) {
-		List<Vendor> vendors = vendorServiceImpl.searchByName(name);
 
-		List<VendorDTO> response = vendors.stream().map(vendor -> {
-			VendorAddressDTO addr = new VendorAddressDTO(vendor.getVendorAddress().getStreet(),
-					vendor.getVendorAddress().getSuite(), vendor.getVendorAddress().getCity(),
-					vendor.getVendorAddress().getState(), vendor.getVendorAddress().getZipCode());
+	    List<Vendor> vendors = vendorServiceImpl.searchByName(name);
 
-			return new VendorDTO(vendor.getVendorId(), vendor.getVendorName(), vendor.getEmail(),
-					vendor.getPhoneNumber(), vendor.getMsaAgreement(), vendor.getAddress(), vendor.getWebsite(), addr,
-					vendor.getAttentionTo(), vendor.getAdditionDoc() ,vendor.getVendorType());
-		}).collect(Collectors.toList());
+	    List<VendorDTO> response = vendors.stream().map(vendor -> {
 
-		return ResponseEntity.ok(response);
+	        VendorAddressDTO addrDTO = new VendorAddressDTO(
+	                vendor.getVendorAddress().getStreet(),
+	                vendor.getVendorAddress().getSuite(),
+	                vendor.getVendorAddress().getCity(),
+	                vendor.getVendorAddress().getState(),
+	                vendor.getVendorAddress().getZipCode()
+	        );
+
+	        // ✅ ADD THIS (conversion only)
+	        VendorAddressDTO addr = new VendorAddressDTO();
+	        addr.setStreet(addrDTO.getStreet());
+	        addr.setSuite(addrDTO.getSuite());
+	        addr.setCity(addrDTO.getCity());
+	        addr.setState(addrDTO.getState());
+	        addr.setZipCode(addrDTO.getZipCode());
+
+	        return new VendorDTO(
+	        	    vendor.getVendorId(),
+	        	    vendor.getVendorName(),
+	        	    vendor.getEmail(),
+	        	    vendor.getPhoneNumber(),
+	        	    vendor.getMsaAgreement(),
+	        	    vendor.getAddress(),
+	        	    vendor.getWebsite(),
+	        	    vendor.getAttentionTo(),
+	        	    vendor.getAdditionDoc(),
+	        	    vendor.getVendorType(),
+	        	    vendor.getEinNumber(),
+	        	    vendor.getCreatedAt(),
+	        	    vendor.getGstin(),
+	        	    vendor.getAdminId() != null ? vendor.getAdminId(): null,
+	        	    vendor.getDiscount(),
+	        	    addr
+	        	);
+	    }).collect(Collectors.toList());
+
+	    return ResponseEntity.ok(response);
 	}
 
 	@GetMapping("/getall")

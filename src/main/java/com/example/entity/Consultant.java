@@ -8,11 +8,14 @@ import java.util.UUID;
 
 import com.example.DTO.NetTerm;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -20,6 +23,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -38,7 +43,6 @@ public class Consultant {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private Long id;
 
 	@Column(nullable = false, unique = true, updatable = false)
@@ -51,7 +55,7 @@ public class Consultant {
 	@Column(nullable = false, unique = true)
 	private String email;
 
-	@Column(name = "mobile_number")
+	@Column(name = "mobile_number", unique = true)
 	private String mobileNumber;
 	
 //30_03_26	
@@ -71,19 +75,12 @@ public class Consultant {
 	@Column(name = "security_number")
 	private String securityNumber;
 
-	@Column(name = "personal_email")
+	@Column(name = "personal_email", unique = true)
 	private String personalEmail;
 
 	@Column(name = "hire_date")
 	private LocalDate hireDate;
-	
 
-	@Column(name = "client_hire_date")
-	private LocalDate clienthireDate;
-
-	@Column(name = "work_location")
-	private String workLocation;
-	
 	@Column(name = "alternate_Number")
 	private String alternateNumber;
 
@@ -99,21 +96,16 @@ public class Consultant {
 	@Column(name = "w4form")
 	private String w4Form;
 	
+	@Column(name = "msa_document")
+	private String msaDocument;
+	
 	@Column(name = "voidcheque")
 	private String voidCheque;
-	
-	@Column(name = "payment_frequency")
-	private String paymentFrequency;
-	
-	
-	@Column(name = "project_end_date")
-	private LocalDate projectEndDate;
-	
-	
-	@Column(name = "project_start_date")
-	private LocalDate projectStartDate;
-	
 
+
+	@Column(name = "consultant_name")
+	private String consultantName;
+	
 	
 	// ✅ FIX HERE
 	@OneToMany(mappedBy = "consultant", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -127,18 +119,27 @@ public class Consultant {
 	
 //30_03_26	
 	
-
 	/* private String mobileNumber; */
-	private BigDecimal billRate;
-	private String documentPath;
 	private String status;
 
 	@Column(name = "adminId")
 	private Long adminId;
+	
+//03-04-2026	
+//	@ManyToOne
+//	@JoinColumn(name = "vendor_id", nullable = false)
+//	private Vendor vendor;
+		
+	
+	@ManyToMany
+	@JsonIgnore
+	private List<Vendor> vendors;
 
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
+	@OneToMany(mappedBy = "consultant")
+	@JsonIgnore
+	private List<Employments> employments;
+	
+//03-04-2026	
 
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private LocalDateTime createdAt;
@@ -152,15 +153,13 @@ public class Consultant {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private Long updatedBy;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "net_term")
-	private NetTerm netTerm;
 
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	private String client;
+	//03-04-26 Bhargav
+//	@Column(name = "invoice_mails")
+//	private String invoiceMail;
 
-	@Column(name = "invoice_mails")
-	private String invoiceMail;
+	
+	//03-04-26 Bhargav
 
 	// consultant address -vasim
 	private String address;
@@ -185,5 +184,6 @@ public class Consultant {
 		this.updatedAt = LocalDateTime.now();
 	}
 
+	
 	
 }

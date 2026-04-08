@@ -304,24 +304,39 @@ public class VendorServiceImpl implements VendorService {
 		// -------- Notify Invoice Service --------
 
 		VendorDTO dto = new VendorDTO();
+
 		dto.setVendorId(updatedVendor.getVendorId());
 		dto.setVendorName(updatedVendor.getVendorName());
 		dto.setEmail(updatedVendor.getEmail());
 		dto.setPhoneNumber(updatedVendor.getPhoneNumber());
-	    dto.setVendorType(updatedVendor.getVendorType());
+		dto.setVendorType(updatedVendor.getVendorType());
 
+		dto.setMsaAgreement(updatedVendor.getMsaAgreement());
+		dto.setAddress(updatedVendor.getAddress());
+		dto.setWebsite(updatedVendor.getWebsite());
+		dto.setAttentionTo(updatedVendor.getAttentionTo());
+		dto.setAdditionDoc(updatedVendor.getAdditionDoc());
+		dto.setEinNumber(updatedVendor.getEinNumber());
+		dto.setGstin(updatedVendor.getGstin());
+		dto.setDiscount(updatedVendor.getDiscount());
+		dto.setCreatedAt(updatedVendor.getCreatedAt());
+		dto.setAdminId(updatedVendor.getAdminId()); // or getAdmin().getId()
+
+		// ✅ Address Mapping
 		if (updatedVendor.getVendorAddress() != null) {
-
-			dto.setVendorAddress(new VendorAddressDTO(updatedVendor.getVendorAddress().getStreet(),
-					updatedVendor.getVendorAddress().getSuite(), updatedVendor.getVendorAddress().getCity(),
-					updatedVendor.getVendorAddress().getState(), updatedVendor.getVendorAddress().getZipCode()));
+		    dto.setVendorAddressDTO(new VendorAddressDTO(
+		            updatedVendor.getVendorAddress().getStreet(),
+		            updatedVendor.getVendorAddress().getSuite(),
+		            updatedVendor.getVendorAddress().getCity(),
+		            updatedVendor.getVendorAddress().getState(),
+		            updatedVendor.getVendorAddress().getZipCode()
+		    ));
 		}
 
 		invoiceUpdateFeignClient.updateInvoicesByVendor(dto);
 
 		return updatedVendor;
 	}
-
 	private void deleteOldFile(String filePath) {
 		try {
 			if (filePath != null) {

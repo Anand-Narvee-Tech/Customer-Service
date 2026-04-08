@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.example.entity.Consultant;
 import com.example.entity.Vendor;
 
 @Repository
@@ -93,4 +94,7 @@ public interface VendorRepository extends JpaRepository<Vendor, Long>, JpaSpecif
 	List<Object[]> getVendorCountPerMonth(@Param("year") int year);
 
 	 List<Vendor> findByAdminId(Long adminId);
+	 
+	 @Query("SELECT c FROM Consultant c LEFT JOIN FETCH c.employments e LEFT JOIN FETCH e.vendor WHERE c.id = :id")
+	 Optional<Consultant> findByIdWithVendor(@Param("id") Long id);
 }
