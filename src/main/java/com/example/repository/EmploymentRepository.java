@@ -1,5 +1,7 @@
 package com.example.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,6 +44,12 @@ public interface EmploymentRepository extends JpaRepository<Employments, Long> {
     	        Pageable pageable
     	);
 
- 
-	
+		boolean existsByConsultant_IdAndVendor_VendorIdAndEmpIdNot(Long consultantId, Long vendorId, Long empId);
+
+		
+		@Query(value = "SELECT * FROM employments e WHERE e.vendor_id = :vendorId AND e.admin_id = :adminId",
+			       nativeQuery = true)
+			List<Employments> findEmploymentsByVendorAndAdminNative(
+			        @Param("vendorId") Long vendorId,
+			        @Param("adminId") Long adminId);
 }

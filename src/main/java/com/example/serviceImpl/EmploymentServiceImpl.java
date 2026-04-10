@@ -46,14 +46,10 @@ public class EmploymentServiceImpl implements EmploymentService {
     @Autowired
     private VendorRepository vendorRepository;
     
-    
     @Value("${file.upload.po.path}")
     private String basePath; // ✅ injected dynamically
 
-
-
     private static final String UPLOAD_DIR = "uploads/";
-
 //    @Override
 //    public Employments saveEmployment(Employments emp, MultipartFile poFile) {
 //
@@ -164,14 +160,63 @@ public class EmploymentServiceImpl implements EmploymentService {
             throw new RuntimeException("Failed to save employment: " + e.getMessage());
         }
     }
+  
     @Override
     public Employments updateEmployment(Long id, Employments emp, MultipartFile poFile) {
 
         Employments existing = repo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Employment not found with ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Employment not found with ID: " + id));
 
         try {
+
+            // ================= CONSULTANT =================
+            if (emp.getConsultant() == null || emp.getConsultant().getId() == null) {
+                throw new RuntimeException("Consultant ID is required");
+            }
+
+            Consultant consultant = consultantRepository.findById(emp.getConsultant().getId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Consultant not found with id: " + emp.getConsultant().getId()));
+
+            existing.setConsultant(consultant);
+
+            // ================= VENDOR =================
+            if (emp.getVendor() != null && emp.getVendor().getVendorId() != null) {
+
+                Long consultantId = consultant.getId();
+                Long vendorId = emp.getVendor().getVendorId();
+
+                // ✅ FIXED (empId used)
+                boolean exists = repo.existsByConsultant_IdAndVendor_VendorIdAndEmpIdNot(
+                        consultantId, vendorId, id);
+
+                if (exists) {
+                    throw new RuntimeException("This consultant already has this vendor assigned");
+                }
+
+                Vendor vendor = vendorRepository.findById(vendorId)
+                        .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + vendorId));
+
+                existing.setVendor(vendor);
+
+            } else {
+                existing.setVendor(null); // optional
+            }
+
+            // ================= ADMIN =================
+            if (emp.getAdminId() == null) {
+                throw new RuntimeException("Admin ID is required");
+            }
+            existing.setAdminId(emp.getAdminId());
+
+            // ================= FILE =================
             if (poFile != null && !poFile.isEmpty()) {
+
+                long maxSize = 50 * 1024 * 1024;
+
+                if (poFile.getSize() > maxSize) {
+                    throw new RuntimeException("PO file size should not exceed 50MB");
+                }
 
                 String fileName = System.currentTimeMillis() + "_" + poFile.getOriginalFilename();
 
@@ -182,7 +227,7 @@ public class EmploymentServiceImpl implements EmploymentService {
                 existing.setPoUpload(fileName);
             }
 
-            // update fields
+            // ================= UPDATE FIELDS =================
             existing.setWorkLocation(emp.getWorkLocation());
             existing.setClient(emp.getClient());
             existing.setBillRate(emp.getBillRate());
@@ -199,7 +244,6 @@ public class EmploymentServiceImpl implements EmploymentService {
             throw new RuntimeException("Failed to update employment: " + e.getMessage());
         }
     }
-
     
     
     // ✅ GET ALL
@@ -264,25 +308,23 @@ public class EmploymentServiceImpl implements EmploymentService {
     public Resource getPoFile(String fileName) {
 
         try {
-            Path baseDir = Paths.get(basePath).toAbsolutePath().normalize();
+            fileName = fileName.trim();
+
+            Path baseDir = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+
             Path filePath = baseDir.resolve(fileName).normalize();
 
-            // 🔍 Debug
-            System.out.println("👉 FileName: " + fileName);
-            System.out.println("👉 Full Path: " + filePath);
+            System.out.println("👉 Final Path: " + filePath);
 
-            // 🔐 Security check
             if (!filePath.startsWith(baseDir)) {
                 throw new RuntimeException("Invalid file path");
             }
 
-            File file = filePath.toFile();
-
-            if (!file.exists()) {
+            if (!Files.exists(filePath)) {
                 throw new RuntimeException("File NOT FOUND. Check DB or upload path.");
             }
 
-            if (!file.canRead()) {
+            if (!Files.isReadable(filePath)) {
                 throw new RuntimeException("File NOT readable.");
             }
 
@@ -292,6 +334,7 @@ public class EmploymentServiceImpl implements EmploymentService {
             throw new RuntimeException("Error fetching file: " + e.getMessage());
         }
     }
+    
 	@Override
 	public EmploymentDTO mapToDTO(Employments emp) {
 
@@ -389,6 +432,16 @@ public class EmploymentServiceImpl implements EmploymentService {
 	    }
 
 	    return repo.findByAdminId(adminId, pageable);
+	}
+
+	@Override
+	public List<Employments> getEmploymentsByVendorIdAndAdminId(Long vendorId, Long adminId) {
+
+	    if (!vendorRepository.existsById(vendorId)) {
+	        throw new RuntimeException("Vendor not found with id: " + vendorId);
+	    }
+
+	    return repo.findEmploymentsByVendorAndAdminNative(vendorId, adminId);
 	}
     
 }
