@@ -2,6 +2,7 @@ package com.example.controller;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -159,6 +160,7 @@ public class EmploymentController {
         return service.deleteEmployment(id);
     }
     
+    
     @GetMapping("/po/file/{fileName:.+}")
     public ResponseEntity<Resource> getPoFile(@PathVariable String fileName) throws IOException {
 
@@ -173,6 +175,7 @@ public class EmploymentController {
                         "inline; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+     
     
     @PostMapping("/emps/searchAndSorting")
     public ResponseEntity<RestAPIResponse> getEmploymentsByAdmin(
@@ -187,6 +190,20 @@ public class EmploymentController {
                         "Employments fetched successfully",
                         employments.getContent()
                 )
+        );
+    }
+    
+    
+    @GetMapping("/vendors/{vendorId}/admins/{adminId}/employments")
+    public ResponseEntity<RestAPIResponse> getEmploymentsByVendorAndAdmin(
+            @PathVariable Long vendorId,
+            @PathVariable Long adminId) {
+
+        List<Employments> employments =
+                service.getEmploymentsByVendorIdAndAdminId(vendorId, adminId);
+
+        return ResponseEntity.ok(
+                new RestAPIResponse("success", "Employments fetched successfully", employments)
         );
     }
 }

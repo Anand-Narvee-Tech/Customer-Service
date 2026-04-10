@@ -32,4 +32,6 @@ public interface EmploymentService {
 
 	
 	public EmploymentDTO mapToDTO(Employments emp);
+
+	public List<Employments> getEmploymentsByVendorIdAndAdminId(Long vendorId, Long adminId);
 }
