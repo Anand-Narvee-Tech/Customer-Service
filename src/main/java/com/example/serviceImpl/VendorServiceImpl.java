@@ -138,38 +138,47 @@ public class VendorServiceImpl implements VendorService {
 
 	private String storeFile(MultipartFile file, String folderName) {
 
-		try {
-			String contentType = file.getContentType();
+	    try {
+	        String contentType = file.getContentType();
 
-			if (contentType == null || !(contentType.equals("application/pdf")
-					|| contentType.equals("application/vnd.ms-excel")
-					|| contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))) {
+	        if (contentType == null || !(contentType.equals("application/pdf")
+	                || contentType.equals("application/vnd.ms-excel")
+	                || contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))) {
 
-				throw new IllegalArgumentException("Only PDF or Excel files allowed");
-			}
+	            throw new IllegalArgumentException("Only PDF or Excel files allowed");
+	        }
 
-			Path uploadDir = Paths.get("uploads", folderName);
-			Files.createDirectories(uploadDir);
+	        Path uploadDir = Paths.get("uploads", folderName);
+	        Files.createDirectories(uploadDir);
 
-			String originalFilename = file.getOriginalFilename();
-			String extension = "";
+	        String originalFilename = file.getOriginalFilename();
+	        String extension = "";
 
-			if (originalFilename != null && originalFilename.contains(".")) {
-				extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-			}
+	        if (originalFilename != null && originalFilename.contains(".")) {
+	            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+	        }
 
-			String fileName = UUID.randomUUID() + extension;
-			Path filePath = uploadDir.resolve(fileName);
+			// ✅ BHARGAV UPDATED PART ONLY
+			String baseName = originalFilename != null
+					? originalFilename.substring(0, originalFilename.lastIndexOf("."))
+					: "file";
 
-			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+			baseName = baseName.replaceAll("\\s+", "_");
 
-			return filePath.toString();
+			String fileName = System.currentTimeMillis() + "_" + baseName + extension;
 
-		} catch (IOException e) {
-			throw new RuntimeException("File upload failed", e);
-		}
+			// BHARGAV 13-04-26
+
+	        Path filePath = uploadDir.resolve(fileName);
+
+	        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+	        return filePath.toString();
+
+	    } catch (IOException e) {
+	        throw new RuntimeException("File upload failed", e);
+	    }
 	}
-
 	// ---------------- DUPLICATES CHECKING ----------------
 	@Override
 	public boolean checkFieldExists(String field, String value) {

@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -307,53 +308,118 @@ public class ConsuantCon {
 		return ResponseEntity.ok(new RestAPIResponse("success", "Consultants fetched successfully", consultants));
 	}
 
+//	commented by Bhargav	
+//	@GetMapping("/uploads/vendor-msa/{fileName:.+}")
+//	public ResponseEntity<Resource> getVendorMsaFile(@PathVariable("fileName") String fileName) throws IOException {
+//
+//		String BASE_PATH = "uploads/vendor-msa";
+//
+//		Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
+//		Path filePath = basePath.resolve(fileName).normalize();
+//
+//		// 🔐 Prevent path traversal (../)
+//		if (!filePath.startsWith(basePath)) {
+//			return ResponseEntity.badRequest().build();
+//		}
+//
+//		Resource resource = new UrlResource(filePath.toUri());
+//
+//		if (!resource.exists() || !resource.isReadable()) {
+//			return ResponseEntity.notFound().build();
+//		}
+//
+//		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
+//				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+//				.body(resource);
+//	}
+//
+//	@GetMapping("/uploads/vendor-additional-docs/{fileName:.+}")
+//	public ResponseEntity<Resource> getVendorAdditionalDoc(@PathVariable("fileName") String fileName)
+//			throws IOException {
+//
+//		String BASE_PATH = "uploads/vendor-additional-docs";
+//
+//		Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
+//		Path filePath = basePath.resolve(fileName).normalize();
+//
+//		// 🔐 Security check
+//		if (!filePath.startsWith(basePath)) {
+//			return ResponseEntity.badRequest().build();
+//		}
+//
+//		Resource resource = new UrlResource(filePath.toUri());
+//
+//		if (!resource.exists() || !resource.isReadable()) {
+//			return ResponseEntity.notFound().build();
+//		}
+//		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
+//				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+//				.body(resource);
+//	}commented by Bhargav
+	
 	@GetMapping("/uploads/vendor-msa/{fileName:.+}")
 	public ResponseEntity<Resource> getVendorMsaFile(@PathVariable("fileName") String fileName) throws IOException {
 
-		String BASE_PATH = "uploads/vendor-msa";
+	    String BASE_PATH = "uploads/vendor-msa";
 
-		Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
-		Path filePath = basePath.resolve(fileName).normalize();
+	    Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
+	    Path filePath = basePath.resolve(fileName).normalize();
 
-		// 🔐 Prevent path traversal (../)
-		if (!filePath.startsWith(basePath)) {
-			return ResponseEntity.badRequest().build();
-		}
+	    if (!filePath.startsWith(basePath)) {
+	        return ResponseEntity.badRequest().build();
+	    }
 
-		Resource resource = new UrlResource(filePath.toUri());
+	    Resource resource = new UrlResource(filePath.toUri());
 
-		if (!resource.exists() || !resource.isReadable()) {
-			return ResponseEntity.notFound().build();
-		}
+	    if (!resource.exists() || !resource.isReadable()) {
+	        return ResponseEntity.notFound().build();
+	    }
 
-		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
-				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-				.body(resource);
+	    // ✅ ONLY CHANGE HERE
+	    String contentType = Files.probeContentType(filePath);
+	    if (contentType == null) {
+	        contentType = "application/octet-stream";
+	    }
+
+	    return ResponseEntity.ok()
+	            .contentType(MediaType.parseMediaType(contentType))
+	            .header(HttpHeaders.CONTENT_DISPOSITION,
+	                    "inline; filename=\"" + resource.getFilename() + "\"")
+	            .body(resource);
 	}
-
+	
 	@GetMapping("/uploads/vendor-additional-docs/{fileName:.+}")
 	public ResponseEntity<Resource> getVendorAdditionalDoc(@PathVariable("fileName") String fileName)
-			throws IOException {
+	        throws IOException {
 
-		String BASE_PATH = "uploads/vendor-additional-docs";
+	    String BASE_PATH = "uploads/vendor-additional-docs";
 
-		Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
-		Path filePath = basePath.resolve(fileName).normalize();
+	    Path basePath = Paths.get(BASE_PATH).toAbsolutePath().normalize();
+	    Path filePath = basePath.resolve(fileName).normalize();
 
-		// 🔐 Security check
-		if (!filePath.startsWith(basePath)) {
-			return ResponseEntity.badRequest().build();
-		}
+	    if (!filePath.startsWith(basePath)) {
+	        return ResponseEntity.badRequest().build();
+	    }
 
-		Resource resource = new UrlResource(filePath.toUri());
+	    Resource resource = new UrlResource(filePath.toUri());
 
-		if (!resource.exists() || !resource.isReadable()) {
-			return ResponseEntity.notFound().build();
-		}
-		return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)
-				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-				.body(resource);
+	    if (!resource.exists() || !resource.isReadable()) {
+	        return ResponseEntity.notFound().build();
+	    }
+
+	    // ✅ ONLY CHANGE HERE
+	    String contentType = Files.probeContentType(filePath);
+	    if (contentType == null) {
+	        contentType = "application/octet-stream";
+	    }
+
+	    return ResponseEntity.ok()
+	            .contentType(MediaType.parseMediaType(contentType))
+	            .header(HttpHeaders.CONTENT_DISPOSITION,
+	                    "inline; filename=\"" + resource.getFilename() + "\"")
+	            .body(resource);
 	}
+	
 
 	@GetMapping("/net-terms")
 	public ResponseEntity<List<Map<String, Object>>> getNetTerms() {
