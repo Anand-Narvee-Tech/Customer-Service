@@ -186,9 +186,13 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	public Consultant save(Consultant req, MultipartFile w4Form, MultipartFile voidCheque) {
 
 	    // ✅ Email validation
-	    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
-	        throw new RuntimeException("Consultant already exists with this email");
-	    }
+		if (req.getEmail() != null && !req.getEmail().trim().isEmpty()) {
+		    
+		    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
+		        throw new RuntimeException("Consultant already exists with this email");
+		    }
+
+		}
 
 //	    // ✅ Vendor validation
 //	    if (req.getVendors() == null || req.getVendors().isEmpty()) {
