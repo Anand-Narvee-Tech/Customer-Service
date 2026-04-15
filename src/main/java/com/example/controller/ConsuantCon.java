@@ -43,6 +43,7 @@ import com.example.client.InvoiceFeignClient;
 import com.example.entity.Consultant;
 import com.example.repository.ConsultantRepository;
 import com.example.service.ConsulanatService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
@@ -136,75 +137,72 @@ public class ConsuantCon {
 //	    }
 //	}
 	
-    @PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<RestAPIResponse> createConsultant(
-            @RequestPart("data") String dataJson,
-            @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
-            @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque) {
+	@PostMapping(value = "/saveConsultant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<RestAPIResponse> createConsultant(@RequestPart("data") String dataJson,
+			@RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
+			@RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque) {
 
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.findAndRegisterModules();
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			objectMapper.findAndRegisterModules();
 
-            Consultant data = objectMapper.readValue(dataJson, Consultant.class);
+			Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
-            // ❌ Removed unnecessary filename setting (handled in service)
+			Consultant savedConsultant = consultantServ.save(data, w4Form, voidCheque);
+			ConsultantRequestDTO response = consultantServ.mapToDTO(savedConsultant);
 
-            Consultant savedConsultant = consultantServ.save(data, w4Form, voidCheque);
+			return ResponseEntity.ok(new RestAPIResponse("success", "Consultant created successfully", response));
 
-            ConsultantRequestDTO response = consultantServ.mapToDTO(savedConsultant);
+		} catch (JsonProcessingException ex) { // ✅ ADD THIS BLOCK
 
-            return ResponseEntity.ok(
-                    new RestAPIResponse("success", "Consultant created successfully", response));
+			return ResponseEntity.badRequest()
+					.body(new RestAPIResponse("fail", "Invalid JSON format. Please check request structure.", null));
 
-        } catch (DataIntegrityViolationException ex) {
+		} catch (DataIntegrityViolationException ex) {
 
-            String message = ex.getMostSpecificCause() != null
-                    ? ex.getMostSpecificCause().getMessage()
-                    : ex.getMessage();
+			
+			String message = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage()
+					: ex.getMessage();
 
-            if (message != null) {
+			if (message != null) {
 
-                String lowerMsg = message.toLowerCase();
+				String lowerMsg = message.toLowerCase();
 
-                // ✅ Duplicate / Unique constraint
-                if (lowerMsg.contains("duplicate") || lowerMsg.contains("unique")) {
+				if (lowerMsg.contains("null value") || lowerMsg.contains("not-null")) {
+					message = "Required field is missing. Please check input data.";
 
-                    if (lowerMsg.contains("email")) {
-                        message = "This email already exists. Please use a different email.";
-                    } else {
-                        message = "Duplicate value already exists.";
-                    }
+				} else if (lowerMsg.contains("duplicate") || lowerMsg.contains("unique")) {
 
-                // ✅ Foreign key
-                } else if (lowerMsg.contains("foreign key")) {
-                    message = "Invalid reference data.";
+					if (lowerMsg.contains("email")) {
+						message = "This email already exists.";
+					} else if (lowerMsg.contains("mobile")) {
+						message = "Mobile number already exists.";
+					} else {
+						message = "Duplicate value already exists.";
+					}
 
-                // ✅ NOT NULL (optional - you can remove if frontend handles)
-                } else if (lowerMsg.contains("not-null") || lowerMsg.contains("null value")) {
-                    message = "Missing required database field.";
+				} else if (lowerMsg.contains("foreign key")) {
+					message = "Invalid reference data.";
 
-                // ✅ IMPORTANT: show real DB error (for debugging)
-                } else {
-                    message = ex.getMostSpecificCause().getMessage();
-                }
-            }
+				} else {
+					message = ex.getMostSpecificCause().getMessage();
+				}
+			}
 
-            return ResponseEntity.badRequest()
-                    .body(new RestAPIResponse("fail", message, null));
+			return ResponseEntity.badRequest().body(new RestAPIResponse("fail", message, null));
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
+		}
+		catch (Exception ex) {
 
-            String message = ex.getMessage();
-            if (message == null || message.trim().isEmpty()) {
-                message = "Unexpected error occurred while creating consultant";
-            }
+		    ex.printStackTrace(); // 🔥 VERY IMPORTANT
 
-            return ResponseEntity.internalServerError()
-                    .body(new RestAPIResponse("fail", message, null));
-        }
-    }
+		    return ResponseEntity.internalServerError()
+		            .body(new RestAPIResponse(
+		                    "fail",
+		                    ex.getMessage(), // show real error
+		                    null));
+		}
+	}
 	// ================= UPDATE =================
 	@PutMapping("/{id}")
 	public ResponseEntity<RestAPIResponse> updateConsultant(
