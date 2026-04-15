@@ -185,58 +185,57 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	@Override
 	public Consultant save(Consultant req, MultipartFile w4Form, MultipartFile voidCheque) {
 
-	    // ✅ Email validation
-		if (req.getEmail() != null && !req.getEmail().trim().isEmpty()) {
-		    
-		    if (consultantRepository.existsByEmailIgnoreCase(req.getEmail())) {
-		        throw new RuntimeException("Consultant already exists with this email");
-		    }
+	    // ================= EMAIL DUPLICATE CHECK (FIXED) =================
+	    String email = req.getEmail();
 
-		}
-
-//	    // ✅ Vendor validation
-//	    if (req.getVendors() == null || req.getVendors().isEmpty()) {
-//	        throw new RuntimeException("At least one vendor is required");
-//	    }
-
-	    // ================= MULTIPLE VENDORS =================
-	    List<Vendor> vendorList = new ArrayList<>();
-
-	    for (Vendor v : req.getVendors()) {
-
-	        if (v.getVendorId() == null) {
-	            throw new RuntimeException("Vendor ID is required");
+	    if (email != null && !email.trim().isEmpty()) {
+	        if (consultantRepository.existsByEmailIgnoreCase(email)) {
+	            throw new RuntimeException("Consultant already exists with this email");
 	        }
-
-	        Vendor vendorObj = vendorRepository.findById(v.getVendorId())
-	                .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + v.getVendorId()));
-
-	        vendorList.add(vendorObj);
 	    }
 
-	    req.setVendors(vendorList);
+	    // ================= CID GENERATION (IMPORTANT) =================
+	    if (req.getCid() == null || req.getCid().isEmpty()) {
+	        req.setCid("CONS-" + UUID.randomUUID());
+	    }
+
+	    // ================= VENDORS (OPTIONAL NOW) =================
+	    if (req.getVendors() != null && !req.getVendors().isEmpty()) {
+
+	        List<Vendor> vendorList = new ArrayList<>();
+
+	        for (Vendor v : req.getVendors()) {
+
+	            if (v.getVendorId() == null) {
+	                throw new RuntimeException("Vendor ID is required");
+	            }
+
+	            Vendor vendorObj = vendorRepository.findById(v.getVendorId())
+	                    .orElseThrow(() -> new RuntimeException("Vendor not found with id: " + v.getVendorId()));
+
+	            vendorList.add(vendorObj);
+	        }
+
+	        req.setVendors(vendorList);
+
+	    } else {
+	        req.setVendors(new ArrayList<>());
+	    }
 
 	    // ================= FILE UPLOAD =================
-
 	    long maxSize = 50 * 1024 * 1024;
 
-	    // ✅ W4 Form (FIXED - only once)
 	    if (w4Form != null && !w4Form.isEmpty()) {
-
 	        if (w4Form.getSize() > maxSize) {
 	            throw new RuntimeException("W4 file size should not exceed 50MB");
 	        }
-
 	        req.setW4Form(storeFile(w4Form));
 	    }
 
-	    // ✅ Void Cheque (ADDED VALIDATION)
 	    if (voidCheque != null && !voidCheque.isEmpty()) {
-
 	        if (voidCheque.getSize() > maxSize) {
 	            throw new RuntimeException("Void Cheque file size should not exceed 50MB");
 	        }
-
 	        req.setVoidCheque(storeFile(voidCheque));
 	    }
 
@@ -253,6 +252,11 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 
 	            if (bank.getBankName() == null || bank.getBankName().isEmpty()) {
 	                throw new RuntimeException("Bank name is required");
+	            }
+
+	            // OPTIONAL FIELD SAFE HANDLING
+	            if (bank.getIfscCode() == null) {
+	                bank.setIfscCode("");
 	            }
 	        });
 	    }
