@@ -141,72 +141,54 @@ public class ConsuantCon {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "w4Form", required = false) MultipartFile w4Form,
             @RequestPart(value = "voidCheque", required = false) MultipartFile voidCheque) {
+
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.findAndRegisterModules();
 
             Consultant data = objectMapper.readValue(dataJson, Consultant.class);
 
-            // ✅ kept as-is
-            if (w4Form != null && !w4Form.isEmpty()) {
-                data.setW4Form(w4Form.getOriginalFilename());
-            }
-
-            if (voidCheque != null && !voidCheque.isEmpty()) {
-                data.setVoidCheque(voidCheque.getOriginalFilename());
-            }
+            // ❌ Removed unnecessary filename setting (handled in service)
 
             Consultant savedConsultant = consultantServ.save(data, w4Form, voidCheque);
 
-            ConsultantRequestDTO response =consultantServ.mapToDTO(savedConsultant);
+            ConsultantRequestDTO response = consultantServ.mapToDTO(savedConsultant);
 
             return ResponseEntity.ok(
                     new RestAPIResponse("success", "Consultant created successfully", response));
 
         } catch (DataIntegrityViolationException ex) {
 
-//            String message = ex.getMostSpecificCause() != null
-//                    ? ex.getMostSpecificCause().getMessage()
-//                    : ex.getMessage();
-//
-//            if (message != null && message.toLowerCase().contains("email")) {
-//                message = "This email already exists. Please use a different email.";
-//            } else if (message != null && message.toLowerCase().contains("not-null")) {
-//                message = "Required field is missing. Please check your input.";
-//            } else if (message != null && message.toLowerCase().contains("foreign key")) {
-//                message = "Invalid reference data (Vendor or related entity not found).";
-//            } else {
-//                message = "Database error: " + message;
-//            }
-        	
-        	String message = ex.getMostSpecificCause() != null
-        	        ? ex.getMostSpecificCause().getMessage()
-        	        : ex.getMessage();
+            String message = ex.getMostSpecificCause() != null
+                    ? ex.getMostSpecificCause().getMessage()
+                    : ex.getMessage();
 
-        	if (message != null) {
+            if (message != null) {
 
-        	    String lowerMsg = message.toLowerCase();
+                String lowerMsg = message.toLowerCase();
 
-        	    // ✅ Duplicate / Unique constraint
-        	    if (lowerMsg.contains("duplicate") || lowerMsg.contains("unique")) {
+                // ✅ Duplicate / Unique constraint
+                if (lowerMsg.contains("duplicate") || lowerMsg.contains("unique")) {
 
-        	        if (lowerMsg.contains("email")) {
-        	            message = "This email already exists. Please use a different email.";
-        	        } else {
-        	            message = "Duplicate value already exists.";
-        	        }
+                    if (lowerMsg.contains("email")) {
+                        message = "This email already exists. Please use a different email.";
+                    } else {
+                        message = "Duplicate value already exists.";
+                    }
 
-        	    // ✅ Foreign key
-        	    } else if (lowerMsg.contains("foreign key")) {
-        	        message = "Invalid reference data.";
+                // ✅ Foreign key
+                } else if (lowerMsg.contains("foreign key")) {
+                    message = "Invalid reference data.";
 
-        	    // ✅ Everything else → send raw DB message (or generic)
-        	    } else {
-        	        message = "Database error occurred";
-        	        // OR if you want debugging:
-        	        // message = ex.getMostSpecificCause().getMessage();
-        	    }
-        	}
+                // ✅ NOT NULL (optional - you can remove if frontend handles)
+                } else if (lowerMsg.contains("not-null") || lowerMsg.contains("null value")) {
+                    message = "Missing required database field.";
+
+                // ✅ IMPORTANT: show real DB error (for debugging)
+                } else {
+                    message = ex.getMostSpecificCause().getMessage();
+                }
+            }
 
             return ResponseEntity.badRequest()
                     .body(new RestAPIResponse("fail", message, null));
