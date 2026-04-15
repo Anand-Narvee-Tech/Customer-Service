@@ -190,10 +190,10 @@ public class ConsulanatServiceImpl implements ConsulanatService {
 	        throw new RuntimeException("Consultant already exists with this email");
 	    }
 
-	    // ✅ Vendor validation
-	    if (req.getVendors() == null || req.getVendors().isEmpty()) {
-	        throw new RuntimeException("At least one vendor is required");
-	    }
+//	    // ✅ Vendor validation
+//	    if (req.getVendors() == null || req.getVendors().isEmpty()) {
+//	        throw new RuntimeException("At least one vendor is required");
+//	    }
 
 	    // ================= MULTIPLE VENDORS =================
 	    List<Vendor> vendorList = new ArrayList<>();
