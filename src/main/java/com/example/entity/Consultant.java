@@ -3,6 +3,7 @@ package com.example.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -131,9 +132,13 @@ public class Consultant {
 //	private Vendor vendor;
 		
 	
+//	@ManyToMany
+//	@JsonIgnore
+//	private List<Vendor> vendors;
+	
 	@ManyToMany
 	@JsonIgnore
-	private List<Vendor> vendors;
+	private List<Vendor> vendors = new ArrayList<>();
 
 	@OneToMany(mappedBy = "consultant")
 	@JsonIgnore
