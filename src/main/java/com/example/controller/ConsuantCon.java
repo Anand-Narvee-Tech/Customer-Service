@@ -165,19 +165,48 @@ public class ConsuantCon {
 
         } catch (DataIntegrityViolationException ex) {
 
-            String message = ex.getMostSpecificCause() != null
-                    ? ex.getMostSpecificCause().getMessage()
-                    : ex.getMessage();
+//            String message = ex.getMostSpecificCause() != null
+//                    ? ex.getMostSpecificCause().getMessage()
+//                    : ex.getMessage();
+//
+//            if (message != null && message.toLowerCase().contains("email")) {
+//                message = "This email already exists. Please use a different email.";
+//            } else if (message != null && message.toLowerCase().contains("not-null")) {
+//                message = "Required field is missing. Please check your input.";
+//            } else if (message != null && message.toLowerCase().contains("foreign key")) {
+//                message = "Invalid reference data (Vendor or related entity not found).";
+//            } else {
+//                message = "Database error: " + message;
+//            }
+        	
+        	String message = ex.getMostSpecificCause() != null
+        	        ? ex.getMostSpecificCause().getMessage()
+        	        : ex.getMessage();
 
-            if (message != null && message.toLowerCase().contains("email")) {
-                message = "This email already exists. Please use a different email.";
-            } else if (message != null && message.toLowerCase().contains("not-null")) {
-                message = "Required field is missing. Please check your input.";
-            } else if (message != null && message.toLowerCase().contains("foreign key")) {
-                message = "Invalid reference data (Vendor or related entity not found).";
-            } else {
-                message = "Database error: " + message;
-            }
+        	if (message != null) {
+
+        	    String lowerMsg = message.toLowerCase();
+
+        	    // ✅ Duplicate / Unique constraint
+        	    if (lowerMsg.contains("duplicate") || lowerMsg.contains("unique")) {
+
+        	        if (lowerMsg.contains("email")) {
+        	            message = "This email already exists. Please use a different email.";
+        	        } else {
+        	            message = "Duplicate value already exists.";
+        	        }
+
+        	    // ✅ Foreign key
+        	    } else if (lowerMsg.contains("foreign key")) {
+        	        message = "Invalid reference data.";
+
+        	    // ✅ Everything else → send raw DB message (or generic)
+        	    } else {
+        	        message = "Database error occurred";
+        	        // OR if you want debugging:
+        	        // message = ex.getMostSpecificCause().getMessage();
+        	    }
+        	}
 
             return ResponseEntity.badRequest()
                     .body(new RestAPIResponse("fail", message, null));

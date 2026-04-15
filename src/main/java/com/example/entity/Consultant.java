@@ -53,7 +53,7 @@ public class Consultant {
 	private String firstName;
 	private String lastName;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = true,unique = true)
 	private String email;
 
 	@Column(name = "mobile_number", unique = true)
