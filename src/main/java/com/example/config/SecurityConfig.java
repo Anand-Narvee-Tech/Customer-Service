@@ -25,7 +25,8 @@ public class SecurityConfig {
 						"/employmentsave/**", "/employment/{id}/**", "/pofileid/{id}", "/all", "/{id}", "/delete/{id}",
 						"/po/file/{fileName:.+}", "/emps/searchAndSorting", "/saveaccounts", "/getAll", "/{id}/**",
 						"/savecontributions", "/getAllcontributions", "/getById/{id}", "/updatedbyid/{id}",
-						"/deletebyid/{id}","/vendors/{vendorId}/admins/{adminId}/employments").permitAll().anyRequest().authenticated());
+						"/deletebyid/{id}","/vendors/{vendorId}/admins/{adminId}/employments",
+						"/internal/provision-schema/**").permitAll().anyRequest().authenticated());
 		return http.build();
 	}
 
